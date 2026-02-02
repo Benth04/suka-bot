@@ -7,6 +7,14 @@ const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysocket
 const fs = require("fs")
 const { getUser, loadDB, saveDB } = require("./db")
 
+process.on("uncaughtException", (err) => {
+console.log("❌ UNCAUGHT ERROR:", err)
+})
+
+process.on("unhandledRejection", (err) => {
+console.log("❌ PROMISE ERROR:", err)
+})
+
 const OWNER = ["4915140928935"] // DEINE PRIVATNUMMER
 
 // Shop Items
@@ -132,5 +140,6 @@ return sock.sendMessage(sender, { text: msgMenu })
 }
 })
 }
+
 
 startBot()
