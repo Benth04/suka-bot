@@ -1,3 +1,4 @@
+console.log("BOT STARTET JETZT")
 // -------------------------
 // Suka Supreme Bot v1.0
 // Owner: +4915150928935
