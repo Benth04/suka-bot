@@ -4,7 +4,7 @@ console.log("BOT STARTET JETZT")
 // Owner: +4915150928935
 // -------------------------
 
-const { default: makeWASocket, useMultiFileAuthState } = require("@onedevil405/baileys")
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require("@onedevil405/baileys")
 const fs = require("fs")
 const qrcode = require("qrcode-terminal")
 const { getUser, loadDB, saveDB } = require("./db")
@@ -12,9 +12,8 @@ const { getUser, loadDB, saveDB } = require("./db")
 process.on("uncaughtException", (err) => console.log("❌ UNCAUGHT ERROR:", err))
 process.on("unhandledRejection", (err) => console.log("❌ PROMISE ERROR:", err))
 
-const OWNER = ["4915140928935"] // DEINE PRIVATNUMMER
+const OWNER = ["4915140928935"]
 
-// Shop Items
 const shop = {
     cars: [
         { name: "BMW M4", price: 85000, emoji: "🚗" },
@@ -33,15 +32,18 @@ const shop = {
     ]
 }
 
-// Start Bot
 async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState("auth")
-    const sock = makeWASocket({ auth: state })
+    // Lade neueste WhatsApp-Version (2026-kompatibel)
+    const { version, isLatest } = await fetchLatestBaileysVersion()
+    console.log(`WhatsApp Version: ${version.join(".")}, aktuell: ${isLatest}`)
 
-    // Speichert automatisch die Credentials
+    const { state, saveCreds } = await useMultiFileAuthState("auth")
+    const sock = makeWASocket({ auth: state, version })
+
+    // Credentials automatisch speichern
     sock.ev.on("creds.update", saveCreds)
 
-    // QR-Code Event & Connection Status
+    // Connection & QR-Code Handling
     sock.ev.on("connection.update", (update) => {
         const { connection, lastDisconnect, qr } = update
         if (qr) {
@@ -50,15 +52,23 @@ async function startBot() {
             console.log("Scanne den QR-Code mit WhatsApp!")
         }
         if (connection === "open") console.log("✅ Bot erfolgreich verbunden!")
-        if (connection === "close") console.log("❌ Verbindung geschlossen:", lastDisconnect?.error)
+        if (connection === "close") {
+            const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error
+            console.log("❌ Verbindung geschlossen:", reason)
+            if (reason === DisconnectReason.loggedOut) {
+                console.log("Du wurdest ausgeloggt, Auth neu starten...")
+                fs.rmSync("./auth", { recursive: true, force: true })
+                startBot()
+            }
+        }
     })
 
-    // Nachrichten-Handler
+    // Nachrichten Handler
     sock.ev.on("messages.upsert", async ({ messages }) => {
         const msg = messages[0]
         if (!msg.message || msg.key.fromMe) return
 
-        const text = msg.message.conversation || ""
+        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
         const sender = msg.key.remoteJid
         const user = getUser(sender)
 
