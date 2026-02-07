@@ -1,51 +1,53 @@
-console.log("BOT STARTET JETZT")
+console.log("BOT STARTET JETZT");
 // -------------------------
 // Suka Supreme Bot v1.0
 // Owner: +4915150928935
 // -------------------------
 
-const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
-const P = require('pino');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
 const fs = require('fs');
 
-const { state, saveState } = useSingleFileAuthState('auth');
 const BOT_OWNER = '+4915150928935@s.whatsapp.net'; // Deine Nummer
 const DATA_FILE = './user_data.json';
 
 // Lade oder erstelle User-Daten
-let userData = {};
-if (fs.existsSync(DATA_FILE)) userData = JSON.parse(fs.readFileSync(DATA_FILE));
-else fs.writeFileSync(DATA_FILE, JSON.stringify({}));
-
-function saveData() {
-fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
-}
+let userData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE)) : {};
+function saveData() { fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2)); }
 
 function ensureUser(sender) {
-if (!userData[sender]) {
-userData[sender] = {
-money: 1000,
-bank: 0,
-inventory: [],
-houses: [],
-cars: [],
-items: [],
-level: 1,
-xp: 0,
-daily: { streak: 0, last: null },
-jobs: [],
-clans: [],
-};
-saveData();
-}
-}
-
-async function sendText(sock, jid, text) {
-await sock.sendMessage(jid, { text });
+  if (!userData[sender]) {
+    userData[sender] = {
+      money: 1000,
+      bank: 0,
+      inventory: [],
+      houses: [],
+      cars: [],
+      items: [],
+      level: 1,
+      xp: 0,
+      daily: { streak: 0, last: null },
+      jobs: [],
+      clans: [],
+    };
+    saveData();
+  }
 }
 
-function handleCommands(sock, sender, command, args) {
-const u = userData[sender];
+async function startBot() {
+  // Auth
+  const { state, saveCreds } = await useMultiFileAuthState('auth');
+
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: true
+  });
+
+  sock.ev.on('creds.update', saveCreds);
+
+  // Helper zum Senden von Texten
+  async function sendText(jid, text) {
+    await sock.sendMessage(jid, { text });
+  }
 
 // ======= Menu =======
 if (command === '/menu') {
