@@ -102,17 +102,13 @@ async function startBot() {
 
         // ===== Menu =====
         if(command==='/menu'){
-            return send(`📌 *Hauptmenü* 📌
-💰 Economy: /balance /inventory /deposit /withdraw /pay
-🛍️ Shop: /shop /buy <item>
-⏰ Daily: /daily
-💼 Jobs: /apply <job> /work /quitjob
-⚔️ Fight: /fight @user /heal
-🎮 Games: /slot <betrag> /coinflip <betrag> kopf/zahl
-🎭 Fun: /hug /slap /meme
-🏴 Clan: /clan create <name>
-💰 Crime: /rob @user /steal @user /jail /escape
-🎁 Loot: /loot`);
+            return send(`
+📌 *Hauptmenü* 📌
+1️⃣ Economy & Inventar 💰🎒
+2️⃣ Shop & Autos/Häuser 🚗🏠
+3️⃣ Fun & Chaos 😂🎲
+4️⃣ Owner 🔑
+_Tippe z.B. "/balance" für Economy_`);
         }
 
         // ===== Economy =====
