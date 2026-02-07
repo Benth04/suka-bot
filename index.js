@@ -8,7 +8,7 @@ const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = requ
 const P = require('pino');
 const fs = require('fs');
 
-const { state, saveState } = useSingleFileAuthState('./auth_info.json');
+const { state, saveState } = useSingleFileAuthState('auth');
 const BOT_OWNER = '+4915150928935@s.whatsapp.net'; // Deine Nummer
 const DATA_FILE = './user_data.json';
 
