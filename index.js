@@ -6,6 +6,7 @@ console.log("BOT STARTET JETZT");
 
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
 const fs = require('fs');
+const qrcode = require('qrcode-terminal');
 
 const BOT_OWNER = '+4915150928935@s.whatsapp.net';
 const DATA_FILE = './user_data.json';
@@ -36,12 +37,11 @@ function ensureUser(sender) {
 }
 
 async function startBot() {
-    // Multi-File Auth
-    const { state, saveCreds } = await useMultiFileAuthState('auth');
+    // Multi-File Auth (auth Ordner)
+    const { state, saveCreds } = await useMultiFileAuthState('./auth');
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false,
         connectTimeoutMs: 30000
     });
 
@@ -49,6 +49,10 @@ async function startBot() {
 
     // Connection Updates
     sock.ev.on('connection.update', (update) => {
+        if(update.qr) {
+            console.log('📌 QR-Code zum Scannen:');
+            qrcode.generate(update.qr, { small: true });
+        }
         if(update.connection==='open') console.log('✅ Bot läuft...');
         if(update.lastDisconnect && update.lastDisconnect.error) {
             console.log('⚠️ Verbindung getrennt:', update.lastDisconnect.error);
@@ -131,7 +135,7 @@ Bank: ${u.bank}€`);
             return sendText(sender, `✅ Du hast ${amount}€ an ${target.split('@')[0]} geschickt`);
         }
 
-        // ===== Shop =====
+        // ===== Shop & Items =====
         const shopItems = {
             house: { price: 10000, type:'house', emoji:'🏠' },
             car: { price: 5000, type:'car', emoji:'🚗' },
