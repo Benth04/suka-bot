@@ -102,13 +102,70 @@ async function startBot() {
 
         // ===== Menu =====
         if(command==='/menu'){
+            const menuNum = args[1] || '0';
+            
+            if(menuNum === '1') {
+                return send(`
+💰 *Economy & Inventar* 💰
+
+/balance - Geld & Bank anzeigen
+/inventory - Inventar anzeigen
+/deposit <betrag> - Geld einzahlen
+/withdraw <betrag> - Geld abheben
+/pay @user <betrag> - Geld senden
+/daily - Tägliche 500€`);
+            }
+            
+            if(menuNum === '2') {
+                return send(`
+🛒 *Shop & Autos/Häuser* 🛒
+
+/shop - Shop Items anzeigen
+/buy <item> - Item kaufen
+Items: house, car, bmw_m4, mercedes_c63, yacht, privatejet, cannabis, luxuryshirt, watch`);
+            }
+            
+            if(menuNum === '3') {
+                return send(`
+😂 *Fun & Chaos* 😂
+
+/hug @user - Umarmen
+/slap @user - Schlagen
+/meme - Meme anzeigen
+/slot <betrag> - Slots spielen
+/coinflip <betrag> kopf/zahl - Münzwurf
+/fight @user - Kämpfen
+/heal - Heilen
+/rob @user - Geld rauben
+/steal @user - Items stehlen
+/jail - Ins Jail gehen
+/escape - Aus Jail fliehen
+/apply <job> - Job annehmen
+/work - Arbeiten
+/loot - Loot öffnen
+/clan create <name> - Clan erstellen
+/clan invite @user <clan> - User einladen
+/clan war <clan> - Clankrieg starten`);
+            }
+            
+            if(menuNum === '4') {
+                if(sender !== BOT_OWNER) return send('❌ Du bist kein Owner!');
+                return send(`
+🔑 *Owner Commands* 🔑
+
+/addmoney <betrag> [@user] - Geld hinzufügen
+/stats - Statistiken anzeigen
+/shutdown - Bot herunterfahren`);
+            }
+            
+            // Default: Hauptmenü
             return send(`
 📌 *Hauptmenü* 📌
 1️⃣ Economy & Inventar 💰🎒
 2️⃣ Shop & Autos/Häuser 🚗🏠
 3️⃣ Fun & Chaos 😂🎲
 4️⃣ Owner 🔑
-_Tippe z.B. "/balance" für Economy_`);
+_Tippe z.B. "/menu 1" für Details_`);
         }
 
         // ===== Economy =====
@@ -206,7 +263,13 @@ Bank: ${u.bank}€`);
                 ensureUser(target); userData[target].money+=amount; saveData();
                 return sendText(sender, `✅ ${amount}€ wurden ${target===sender?'dir':target} hinzugefügt`);
             }
-            if(command==='/shutdown') process.exit();
+            if(command==='/stats'){
+                const userCount = Object.keys(userData).length;
+                const totalMoney = Object.values(userData).reduce((sum, user) => sum + user.money, 0);
+                const totalBank = Object.values(userData).reduce((sum, user) => sum + user.bank, 0);
+                return sendText(sender, `📊 *Bot Statistiken*\n\n👥 User: ${userCount}\n💰 Geld im Umlauf: ${totalMoney}€\n🏦 Geld in Banken: ${totalBank}€\n💵 Total: ${totalMoney + totalBank}€`);
+            }
+            if(command==='/shutdown') return sendText(sender, '👋 Bot wird heruntergefahren...') && process.exit();
         }
 
         // ===== Jobs / Work =====
