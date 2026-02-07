@@ -4,12 +4,11 @@ console.log("BOT STARTET JETZT");
 // Owner: +4915150928935
 // -------------------------
 
-const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
 const fs = require('fs');
 
 const BOT_OWNER = '+4915150928935@s.whatsapp.net';
 const DATA_FILE = './user_data.json';
-const SESSION_FILE = './auth';
 
 // Lade oder erstelle User-Daten
 let userData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE)) : {};
@@ -37,11 +36,12 @@ function ensureUser(sender) {
 }
 
 async function startBot() {
-    // Auth
-    const { state, saveCreds } = await useSingleFileAuthState(SESSION_FILE);
+    // Multi-File Auth
+    const { state, saveCreds } = await useMultiFileAuthState('auth');
 
     const sock = makeWASocket({
         auth: state,
+        printQRInTerminal: true,
         connectTimeoutMs: 30000
     });
 
@@ -60,7 +60,7 @@ async function startBot() {
         await sock.sendMessage(jid, { text });
     }
 
-    // Event für Nachrichten
+    // Nachrichten Event
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if(!msg.message || msg.key.fromMe) return;
@@ -172,7 +172,7 @@ Bank: ${u.bank}€`);
             return sendText(sender, `✅ Du hast ${amount}€ erhalten 🌟 Streak: ${u.daily.streak}`);
         }
 
-        // ===== Fun =====
+        // ===== Fun & Meme =====
         if(command==='/hug') return sendText(sender, `🤗 ${sender.split('@')[0]} umarmt ${args[1]||'dir selbst'}`);
         if(command==='/slap') return sendText(sender, `💥 ${sender.split('@')[0]} schlägt ${args[1]||'dir selbst'}`);
         if(command==='/meme') return sendText(sender,'😂 Hier wäre ein Meme! (Platzhalter)');
@@ -188,7 +188,7 @@ Bank: ${u.bank}€`);
             if(command==='/shutdown') process.exit();
         }
 
-        // ===== Jobs =====
+        // ===== Jobs / Work =====
         if(['/work','/job'].includes(command)){
             if(u.jobs.length===0) return sendText(sender,'❌ Du hast keinen Job. /apply <job> um zu bewerben');
             const salary=Math.floor(Math.random()*(500-100)+100);
@@ -201,8 +201,13 @@ Bank: ${u.bank}€`);
             u.jobs.push(job); saveData();
             return sendText(sender, `✅ Du wurdest als ${job} eingestellt`);
         }
+        if(command==='/quitjob'){
+            const job=args[1]; if(!job||!u.jobs.includes(job)) return sendText(sender,'❌ Job nicht gefunden');
+            u.jobs=u.jobs.filter(j=>j!==job); saveData();
+            return sendText(sender, `✅ Du hast den Job ${job} gekündigt`);
+        }
 
-        // ===== Crime =====
+        // ===== Crime / Risk =====
         if(command==='/rob'){
             const target=args[1]?.replace('@','')+'@s.whatsapp.net';
             if(!target || !userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
@@ -213,6 +218,56 @@ Bank: ${u.bank}€`);
             } else return sendText(sender,'❌ Du wurdest erwischt und musst 1 Runde aussetzen');
         }
 
+        if(command==='/steal'){
+            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
+            if(!target || !userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
+            if(Math.random()>0.6){
+                const item=userData[target].items.pop();
+                if(!item) return sendText(sender,'❌ Ziel hat keine Items');
+                u.items.push(item); saveData();
+                return sendText(sender, `🛒 Du hast ${item} von ${target.split('@')[0]} gestohlen`);
+            } else return sendText(sender,'❌ Gestohlen fehlgeschlagen');
+        }
+
+        if(command==='/jail'){ u.jail=true; saveData(); return sendText(sender,'🚨 Du bist im Jail, warte 1 Minute oder nutze /escape'); }
+        if(command==='/escape'){
+            if(!u.jail) return sendText(sender,'❌ Du bist nicht im Jail');
+            if(Math.random()>0.5){ u.jail=false; saveData(); return sendText(sender,'✅ Du bist entkommen!'); }
+            else return sendText(sender,'❌ Flucht fehlgeschlagen, bleib im Jail');
+        }
+
+        // ===== Fight / Duel =====
+        if(command==='/fight'){
+            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
+            if(!target||!userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
+            const damage=Math.floor(Math.random()*50)+10;
+            const targetUser=userData[target];
+            targetUser.hp=targetUser.hp||100;
+            targetUser.hp-=damage;
+            if(targetUser.hp<=0){ targetUser.hp=100; saveData(); return sendText(sender, `💥 Du hast ${target.split('@')[0]} besiegt!`); }
+            saveData();
+            return sendText(sender, `⚔️ Du hast ${target.split('@')[0]} ${damage} HP Schaden zugefügt!`);
+        }
+        if(command==='/heal'){ u.hp=100; saveData(); return sendText(sender,'💖 Du wurdest geheilt'); }
+
+        // ===== Casino / Games =====
+        if(command==='/slot'){
+            const bet=parseInt(args[1]); if(!bet||bet>u.money) return sendText(sender,'❌ Ungültiger Einsatz');
+            const symbols=['🍒','🍋','🍊','🍉','💎','7️⃣'];
+            const result=[symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)]];
+            let win=0; if(result[0]===result[1]&&result[1]===result[2]) win=bet*5;
+            u.money-=bet; u.money+=win; saveData();
+            return sendText(sender, `🎰 ${result.join(' ')}\n${win>0?'✅ Du hast '+win+'€ gewonnen':'❌ Du hast verloren'}`);
+        }
+        if(command==='/coinflip'){
+            const bet=parseInt(args[1]); if(!bet||bet>u.money) return sendText(sender,'❌ Ungültiger Einsatz');
+            const flip=Math.random()<0.5?'Kopf':'Zahl'; const choice=args[2]||'Kopf';
+            let win=0; if(choice.toLowerCase()===flip.toLowerCase()) win=bet*2;
+            u.money-=bet; u.money+=win; saveData();
+            return sendText(sender, `🪙 Ergebnis: ${flip}\n${win>0?'✅ Du hast '+win+'€ gewonnen':'❌ Du hast verloren'}`);
+        }
+
+        // ===== Loot / Boxes =====
         if(command==='/loot'||command==='/open'){
             const items=['💎 Diamant','🌿 Cannabis','👕 Luxusshirt','🚗 Auto','🏠 Haus','⌚ Uhr'];
             const found=items[Math.floor(Math.random()*items.length)];
@@ -232,8 +287,11 @@ Bank: ${u.bank}€`);
             ensureUser(target); userData[target].clans.push(clan); saveData();
             return sendText(sender, `✅ ${target.split('@')[0]} wurde eingeladen`);
         }
+        if(command==='/clan war'){
+            const targetClan=args[1]; if(!targetClan) return sendText(sender,'❌ Syntax: /clan war <clan>');
+            return sendText(sender, `⚔️ Clankrieg gegen ${targetClan} gestartet!`);
+        }
     }
-
 }
 
 startBot();
