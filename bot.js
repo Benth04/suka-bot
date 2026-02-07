@@ -119,6 +119,19 @@ Geld: ${u.money}€
 Bank: ${u.bank}€`);
         }
 
+        if(command==='/lid'){
+            const userId = sender.split('@')[0];
+            return sendText(sender, `
+👤 *Dein Profil* 👤
+ID: ${userId}
+Level: ${u.level || 1}
+XP: ${u.xp || 0}
+HP: ${u.hp || 100}
+Jobs: ${u.jobs.length > 0 ? u.jobs.join(', ') : 'Keine'}
+Clans: ${u.clans.length > 0 ? u.clans.join(', ') : 'Keine'}
+Jail: ${u.jail ? '🚨 Ja' : '✅ Nein'}`);
+        }
+
         if(command==='/deposit'){
             const amount=parseInt(args[1]);
             if(!amount || amount<=0) return sendText(sender,'❌ Betrag angeben');
