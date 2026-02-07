@@ -1,14 +1,14 @@
 console.log("BOT STARTET JETZT");
 // -------------------------
 // Suka Supreme Bot v1.0
-// Owner: +4915150928935
+// Owner: +49 1515 0928935
 // -------------------------
 
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
-const BOT_OWNER = '+4915150928935@s.whatsapp.net';
+const BOT_OWNER = '+49 1515 0928935@s.whatsapp.net';
 const DATA_FILE = './user_data.json';
 
 // Lade oder erstelle User-Daten
@@ -76,7 +76,9 @@ async function startBot() {
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if(!msg.message || msg.key.fromMe) return;
-        const sender = msg.key.remoteJid;
+        let sender = msg.key.remoteJid;
+        // Stelle sicher, dass sender das korrekte Format hat
+        if(!sender.includes('@')) sender = sender + '@s.whatsapp.net';
         ensureUser(sender);
 
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text;

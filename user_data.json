@@ -23,7 +23,9 @@
     "inventory": [],
     "houses": [],
     "cars": [],
-    "items": [],
+    "items": [
+      "⌚ Uhr"
+    ],
     "level": 1,
     "xp": 0,
     "hp": 100,
