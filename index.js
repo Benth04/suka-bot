@@ -4,7 +4,7 @@ console.log("BOT STARTET JETZT");
 // Owner: +4915150928935
 // -------------------------
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
@@ -42,7 +42,11 @@ async function startBot() {
 
     const sock = makeWASocket({
         auth: state,
-        connectTimeoutMs: 30000
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 30000,
+        defaultQueryTimeoutMs: 20000,
+        browser: ['Ubuntu', 'Chrome', '120.0.6099.129'],
+        logger: require('pino')({ level: 'error' })
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -54,8 +58,12 @@ async function startBot() {
             qrcode.generate(update.qr, { small: true });
         }
         if(update.connection==='open') console.log('✅ Bot läuft...');
+        if(update.connection==='connecting') console.log('🔄 Verbinde...');
         if(update.lastDisconnect && update.lastDisconnect.error) {
-            console.log('⚠️ Verbindung getrennt:', update.lastDisconnect.error);
+            console.log('⚠️ Verbindung getrennt, reconnect in 5s...');
+            const reason = update.lastDisconnect.error.output?.statusCode;
+            if(reason === DisconnectReason.loggedOut) process.exit(0);
+            setTimeout(startBot, 5000);
         }
     });
 
@@ -80,18 +88,31 @@ async function startBot() {
     });
 
     // ===== Commands =====
-    function handleCommands(sock, sender, command, args){
+    async function handleCommands(sock, sender, command, args){
         const u = userData[sender];
+
+        // Helper
+        async function send(text) {
+            try {
+                await sock.sendMessage(sender, { text });
+            } catch(e) {
+                console.error('Fehler beim Senden:', e.message);
+            }
+        }
 
         // ===== Menu =====
         if(command==='/menu'){
-            return sendText(sender, `
-📌 *Hauptmenü* 📌
-1️⃣ Economy & Inventar 💰🎒
-2️⃣ Shop & Autos/Häuser 🚗🏠
-3️⃣ Fun & Chaos 😂🎲
-4️⃣ Owner 🔑
-_Tippe z.B. "/balance" für Economy_`);
+            return send(`📌 *Hauptmenü* 📌
+💰 Economy: /balance /inventory /deposit /withdraw /pay
+🛍️ Shop: /shop /buy <item>
+⏰ Daily: /daily
+💼 Jobs: /apply <job> /work /quitjob
+⚔️ Fight: /fight @user /heal
+🎮 Games: /slot <betrag> /coinflip <betrag> kopf/zahl
+🎭 Fun: /hug /slap /meme
+🏴 Clan: /clan create <name>
+💰 Crime: /rob @user /steal @user /jail /escape
+🎁 Loot: /loot`);
         }
 
         // ===== Economy =====
@@ -298,4 +319,7 @@ Bank: ${u.bank}€`);
     }
 }
 
-startBot();
+startBot().catch(err => {
+    console.error('❌ Bot Fehler:', err);
+    process.exit(1);
+});
