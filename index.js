@@ -17,7 +17,7 @@ const OWNER = ["4915140928935"]
 const shop = {
     cars: [
         { name: "BMW M4", price: 85000, emoji: "🚗" },
-        { name: "Mercedes AMG", price: 92000, emoji: "🚙" }
+        { name: "Mercedes AMG GT", price: 92000, emoji: "🚙" }
     ],
     houses: [
         { name: "Villa", price: 200000, emoji: "🏠" },
