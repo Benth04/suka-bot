@@ -4,7 +4,7 @@ console.log("BOT STARTET JETZT")
 // Owner: +4915150928935
 // -------------------------
 
-const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@adiwajshing/baileys');
+const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require('@onedevil405/baileys');
 const P = require('pino');
 const fs = require('fs');
 
