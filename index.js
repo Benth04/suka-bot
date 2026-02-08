@@ -9,6 +9,7 @@ const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
 const BOT_OWNER = '+49 1515 0928935@s.whatsapp.net';
+const OWNER_LID = '2472489695390@lid';
 const DATA_FILE = './user_data.json';
 
 // Lade oder erstelle User-Daten
@@ -279,7 +280,8 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
         if(command==='/meme') return sendText(sender,'😂 Hier wäre ein Meme! (Platzhalter)');
 
         // ===== Owner =====
-        if(sender===BOT_OWNER){
+        const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
+        if(isOwner){
             if(command==='/addmoney'){
                 const amount=parseInt(args[1]);
                 const target=args[2]?args[2]+'@s.whatsapp.net':sender;
