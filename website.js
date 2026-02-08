@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const PORT = process.env.PORT || 8080;
+// Port: Railway nutzt PORT env var, lokal 3000
+const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = './config.json';
 
 // Helper to get IP address
@@ -180,18 +181,24 @@ function startWebsite() {
         res.json(config.commands_enabled || {});
     });
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         const ip = getLocalIP();
         const env = process.env.NODE_ENV || 'development';
         
         if (env === 'production') {
-            console.log(`🌐 Website läuft auf https://suka-bot-production.up.railway.app:${PORT}`);
-            console.log(`🔐 Admin Panel: https://suka-bot-production.up.railway.app:${PORT}`);
+            console.log(`🌐 Website läuft auf https://suka-bot-production.up.railway.app`);
+            console.log(`🔐 Admin Panel: https://suka-bot-production.up.railway.app`);
         } else {
             console.log(`🌐 Website läuft auf http://${ip}:${PORT}`);
             console.log(`🌐 Website läuft auf http://localhost:${PORT}`);
             console.log(`🔐 Admin Panel: http://${ip}:${PORT}`);
         }
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`❌ Port ${PORT} wird bereits verwendet!`);
+            process.exit(1);
+        }
+        throw err;
     });
 }
 
