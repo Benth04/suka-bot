@@ -7,6 +7,7 @@ console.log("BOT STARTET JETZT");
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
+const { startWebsite } = require('./website');
 
 const BOT_OWNER = '+49 1515 0928935@s.whatsapp.net';
 const OWNER_LID = '2472489695390@lid';
@@ -55,7 +56,7 @@ async function startBot() {
     // Connection Updates
     sock.ev.on('connection.update', (update) => {
         if(update.qr) {
-            console.log('📌 QR-Code zum Scannen:');
+            console.log('� QR-Code zum Scannen:');
             qrcode.generate(update.qr, { small: true });
         }
         if(update.connection==='open') console.log('✅ Bot läuft...');
@@ -509,6 +510,9 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
         }
     }
 }
+// Starte Bot und Website parallel
+console.log('🚀 Starte Bot und Website...');
+startWebsite();
 
 startBot().catch(err => {
     console.error('❌ Bot Fehler:', err);
