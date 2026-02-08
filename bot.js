@@ -120,16 +120,24 @@ Bank: ${u.bank}€`);
         }
 
         if(command==='/lid'){
-            const userId = sender.split('@')[0];
+            let userId = sender.split('@')[0];
+            let targetUser = u;
+            
+            if(args[1]) {
+                const target = args[1].replace('@','')+'@s.whatsapp.net';
+                if(!userData[target]) return sendText(sender,'❌ User nicht gefunden');
+                userId = target.split('@')[0];
+                targetUser = userData[target];
+            }
+            
             return sendText(sender, `
-👤 *Dein Profil* 👤
-ID: ${userId}
-Level: ${u.level || 1}
-XP: ${u.xp || 0}
-HP: ${u.hp || 100}
-Jobs: ${u.jobs.length > 0 ? u.jobs.join(', ') : 'Keine'}
-Clans: ${u.clans.length > 0 ? u.clans.join(', ') : 'Keine'}
-Jail: ${u.jail ? '🚨 Ja' : '✅ Nein'}`);
+👤 *Profil ID: ${userId}* 👤
+Level: ${targetUser.level || 1}
+XP: ${targetUser.xp || 0}
+HP: ${targetUser.hp || 100}
+Jobs: ${targetUser.jobs.length > 0 ? targetUser.jobs.join(', ') : 'Keine'}
+Clans: ${targetUser.clans.length > 0 ? targetUser.clans.join(', ') : 'Keine'}
+Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
         }
 
         if(command==='/deposit'){
