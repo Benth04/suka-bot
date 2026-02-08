@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const CONFIG_FILE = './config.json';
 
 // Helper to get IP address
@@ -182,9 +182,16 @@ function startWebsite() {
     
     app.listen(PORT, () => {
         const ip = getLocalIP();
-        console.log(`🌐 Website läuft auf http://${ip}:${PORT}`);
-        console.log(`🌐 Website läuft auf http://localhost:${PORT}`);
-        console.log(`🔐 Admin Panel: http://${ip}:${PORT}/admin`);
+        const env = process.env.NODE_ENV || 'development';
+        
+        if (env === 'production') {
+            console.log(`🌐 Website läuft auf https://suka-bot-production.up.railway.app:${PORT}`);
+            console.log(`🔐 Admin Panel: https://suka-bot-production.up.railway.app:${PORT}`);
+        } else {
+            console.log(`🌐 Website läuft auf http://${ip}:${PORT}`);
+            console.log(`🌐 Website läuft auf http://localhost:${PORT}`);
+            console.log(`🔐 Admin Panel: http://${ip}:${PORT}`);
+        }
     });
 }
 
