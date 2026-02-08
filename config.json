@@ -1,0 +1,24 @@
+{
+  "admin_password": "admin123",
+  "port": 3000,
+  "bot_owner": "+49 1515 0928935",
+  "commands_enabled": {
+    "balance": true,
+    "inventory": true,
+    "deposit": true,
+    "withdraw": true,
+    "pay": true,
+    "daily": true,
+    "shop": true,
+    "buy": true,
+    "work": true,
+    "rob": true,
+    "steal": true,
+    "fight": true,
+    "slot": true,
+    "coinflip": true,
+    "jail": true,
+    "clan": true
+  },
+  "banned_users": []
+}

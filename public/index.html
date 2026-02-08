@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suka Supreme Bot</title>
+    <title>Suka Supreme Bot Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -25,33 +25,72 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 1000px;
+            max-width: 1200px;
             width: 100%;
             padding: 40px;
         }
         
         .header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
         }
         
         .header h1 {
             color: #667eea;
             font-size: 2.5em;
-            margin-bottom: 10px;
         }
         
-        .header p {
-            color: #666;
-            font-size: 1.1em;
+        .header-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
         }
         
         .status {
             display: flex;
             align-items: center;
             gap: 10px;
-            justify-content: center;
-            margin-bottom: 30px;
         }
         
         .status-dot {
@@ -62,9 +101,43 @@
             animation: pulse 2s infinite;
         }
         
+        .status-dot.offline {
+            background: #ef4444;
+            animation: none;
+        }
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: #f3f4f6;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
         }
         
         .grid {
@@ -80,13 +153,6 @@
             padding: 20px;
             color: white;
             text-align: center;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
         }
         
         .card-number {
@@ -100,25 +166,24 @@
             opacity: 0.9;
         }
         
-        .users-section {
-            margin-top: 40px;
-            padding-top: 40px;
-            border-top: 2px solid #eee;
+        .users-section, .admin-section {
+            margin-top: 30px;
         }
         
-        .users-section h2 {
+        .section-title {
             color: #667eea;
             margin-bottom: 20px;
+            font-size: 1.5em;
         }
         
-        .user-list {
-            max-height: 400px;
+        .user-list, .commands-list, .ban-list {
+            max-height: 500px;
             overflow-y: auto;
             border: 1px solid #eee;
             border-radius: 10px;
         }
         
-        .user-item {
+        .user-item, .command-item, .ban-item {
             padding: 15px;
             border-bottom: 1px solid #eee;
             display: flex;
@@ -127,11 +192,11 @@
             transition: background 0.3s ease;
         }
         
-        .user-item:hover {
+        .user-item:hover, .command-item:hover, .ban-item:hover {
             background: #f9f9f9;
         }
         
-        .user-item:last-child {
+        .user-item:last-child, .command-item:last-child, .ban-item:last-child {
             border-bottom: none;
         }
         
@@ -148,6 +213,139 @@
             font-size: 0.85em;
         }
         
+        .command-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #10b981;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .login-form h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .error {
+            color: #ef4444;
+            padding: 10px;
+            background: #fee2e2;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success {
+            color: #059669;
+            padding: 10px;
+            background: #d1fae5;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .admin-controls {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -156,78 +354,226 @@
             color: #666;
             font-size: 0.9em;
         }
-        
-        .emoji {
-            font-size: 1.2em;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1><span class="emoji">🤖</span> Suka Supreme Bot</h1>
-            <p>Dashboard & Statistiken</p>
+        <!-- Login Form -->
+        <div id="login-screen" class="login-form">
+            <h2>🔐 Admin Panel Login</h2>
+            <div class="error" id="login-error"></div>
+            <div class="form-group">
+                <label>Admin Password</label>
+                <input type="password" id="admin-password" placeholder="Gib das Admin Passwort ein">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="login()">Login</button>
         </div>
         
-        <div class="status">
-            <div class="status-dot"></div>
-            <span id="status-text">Bot läuft...</span>
-        </div>
-        
-        <div class="grid">
-            <div class="card">
-                <div class="emoji">👥</div>
-                <div class="card-number" id="user-count">0</div>
-                <div class="card-label">Aktive Benutzer</div>
-            </div>
-            <div class="card">
-                <div class="emoji">💰</div>
-                <div class="card-number" id="total-money">0</div>
-                <div class="card-label">Gesamtvermögen</div>
-            </div>
-            <div class="card">
-                <div class="emoji">🏠</div>
-                <div class="card-number" id="total-houses">0</div>
-                <div class="card-label">Häuser</div>
-            </div>
-            <div class="card">
-                <div class="emoji">🚗</div>
-                <div class="card-number" id="total-cars">0</div>
-                <div class="card-label">Autos</div>
-            </div>
-        </div>
-        
-        <div class="users-section">
-            <h2>Top Benutzer (nach Level)</h2>
-            <div class="user-list" id="user-list">
-                <div style="padding: 20px; text-align: center; color: #999;">
-                    Lädt...
+        <!-- Dashboard -->
+        <div id="dashboard" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1><span style="font-size: 1.2em;">🤖</span> Suka Supreme Bot</h1>
+                    <p style="color: #666;">Dashboard & Admin Panel</p>
+                </div>
+                <div class="header-right">
+                    <div class="status">
+                        <div class="status-dot" id="status-dot"></div>
+                        <span id="status-text">Bot lädt...</span>
+                    </div>
+                    <button class="btn btn-danger" onclick="logout()">Logout</button>
                 </div>
             </div>
-        </div>
-        
-        <div class="footer">
-            <p>© 2024 Suka Supreme Bot | Version 1.0.0</p>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('overview')">📊 Übersicht</button>
+                <button class="tab-btn" onclick="switchTab('commands')">⚙️ Commands</button>
+                <button class="tab-btn" onclick="switchTab('users')">👥 Benutzer</button>
+                <button class="tab-btn" onclick="switchTab('moderation')">🚫 Moderation</button>
+            </div>
+            
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="grid">
+                    <div class="card">
+                        <div style="font-size: 2em;">👥</div>
+                        <div class="card-number" id="user-count">0</div>
+                        <div class="card-label">Aktive Benutzer</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 2em;">💾</div>
+                        <div class="card-number" id="total-money">0</div>
+                        <div class="card-label">Gesamtvermögen</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 2em;">⏱️</div>
+                        <div class="card-number" id="uptime">0h 0m</div>
+                        <div class="card-label">Laufzeit</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 2em;">📨</div>
+                        <div class="card-number" id="messages">0</div>
+                        <div class="card-label">Nachrichten verarbeitet</div>
+                    </div>
+                </div>
+                
+                <div class="users-section">
+                    <h2 class="section-title">Top 10 Benutzer (nach Level)</h2>
+                    <div class="user-list" id="user-list">
+                        <div style="padding: 20px; text-align: center; color: #999;">
+                            Lädt...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Commands Tab -->
+            <div id="commands" class="tab-content">
+                <div class="admin-controls">
+                    <h2 class="section-title">Command Verwaltung</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Aktiviere oder deaktiviere Commands nach Bedarf</p>
+                </div>
+                <div class="commands-list" id="commands-list">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Lädt...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Users Tab -->
+            <div id="users" class="tab-content">
+                <div class="admin-controls">
+                    <h2 class="section-title">Benutzer Verwaltung</h2>
+                    <div class="search-box">
+                        <input type="text" id="user-search" placeholder="Benutzer suchen..." onkeyup="filterUsers()">
+                    </div>
+                </div>
+                <div class="user-list" id="users-full">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Lädt...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Moderation Tab -->
+            <div id="moderation" class="tab-content">
+                <div class="admin-controls">
+                    <h2 class="section-title">Verbannte Benutzer</h2>
+                    <div class="search-box">
+                        <input type="text" id="ban-search" placeholder="Benutzer zum Bannen eingeben...">
+                    </div>
+                    <div class="action-buttons">
+                        <input type="text" id="ban-user-input" placeholder="WhatsApp-Nummer eingeben" style="flex: 1; padding: 10px; border: 2px solid #eee; border-radius: 8px;">
+                        <button class="btn btn-danger" onclick="banUser()">Bannen</button>
+                    </div>
+                </div>
+                <div class="ban-list" id="ban-list">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        Keine Benutzer gebannt
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>© 2024 Suka Supreme Bot | Version 1.0.0 | Alle Rechte vorbehalten</p>
+            </div>
         </div>
     </div>
     
     <script>
-        // Lade Bot-Status
+        let authToken = localStorage.getItem('authToken');
+        
+        function login() {
+            const password = document.getElementById('admin-password').value;
+            
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    loadDashboard();
+                } else {
+                    showError('Falsches Passwort!');
+                }
+            })
+            .catch(err => showError('Login Fehler: ' + err.message));
+        }
+        
+        function logout() {
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Authorization': authToken }
+            }).then(() => {
+                localStorage.removeItem('authToken');
+                location.reload();
+            });
+        }
+        
+        function showError(msg) {
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function loadDashboard() {
+            if (!authToken && !document.getElementById('dashboard').style.display === 'block') {
+                document.getElementById('login-screen').style.display = 'block';
+                return;
+            }
+            
+            // Load Status
+            loadStatus();
+            
+            // Load Users
+            loadUsers();
+            
+            // Load Commands
+            loadCommands();
+            
+            // Load Banned Users
+            loadBannedUsers();
+            
+            // Refresh every 5 seconds
+            setInterval(() => {
+                loadStatus();
+                loadUsers();
+            }, 5000);
+        }
+        
         async function loadStatus() {
             try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                document.getElementById('status-text').textContent = `Bot läuft (${data.name})`;
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                document.getElementById('status-dot').className = 'status-dot ' + (data.status === 'online' ? '' : 'offline');
+                document.getElementById('status-text').textContent = data.status === 'online' ? '✅ Bot läuft' : '❌ Bot offline';
+                document.getElementById('user-count').textContent = data.totalUsers;
+                document.getElementById('uptime').textContent = data.uptime;
+                document.getElementById('messages').textContent = data.messagesProcessed;
             } catch (error) {
-                document.getElementById('status-text').textContent = 'Bot läuft...';
+                console.error('Status Fehler:', error);
             }
         }
         
-        // Lade User-Daten
         async function loadUsers() {
             try {
-                const response = await fetch('/api/users');
-                const userData = await response.json();
+                const res = await fetch('/api/users');
+                const userData = await res.json();
                 
                 const users = Object.entries(userData).map(([id, data]) => ({
                     id,
@@ -235,52 +581,184 @@
                     level: data.level || 1,
                     xp: data.xp || 0,
                     money: data.money || 0,
-                    houses: data.houses?.length || 0,
-                    cars: data.cars?.length || 0
+                    bank: data.bank || 0
                 }));
                 
-                // Statistiken
-                const stats = {
-                    users: users.length,
-                    money: users.reduce((sum, u) => sum + u.money, 0),
-                    houses: users.reduce((sum, u) => sum + u.houses, 0),
-                    cars: users.reduce((sum, u) => sum + u.cars, 0)
-                };
+                // Calculate total money
+                const totalMoney = users.reduce((sum, u) => sum + u.money + u.bank, 0);
+                document.getElementById('total-money').textContent = totalMoney.toLocaleString('de-DE') + '€';
                 
-                document.getElementById('user-count').textContent = stats.users;
-                document.getElementById('total-money').textContent = stats.money.toLocaleString('de-DE');
-                document.getElementById('total-houses').textContent = stats.houses;
-                document.getElementById('total-cars').textContent = stats.cars;
-                
-                // Sortiere nach Level
+                // Sort by level
                 users.sort((a, b) => b.level - a.level || b.xp - a.xp);
                 
-                // Zeige Top 10
-                const userListHTML = users.slice(0, 10).map((user, i) => `
+                // Top 10
+                const topHTML = users.slice(0, 10).map((user, i) => `
                     <div class="user-item">
                         <div>
                             <div style="margin-bottom: 5px;">
                                 <strong>${i + 1}.</strong>
                                 <span class="user-name">${user.name}</span>
                             </div>
-                            <small style="color: #999;">Level: ${user.level} | XP: ${user.xp}</small>
+                            <small style="color: #999;">💰 ${user.money}€ | 🏦 ${user.bank}€</small>
                         </div>
                         <div class="user-level">Level ${user.level}</div>
                     </div>
                 `).join('');
                 
-                document.getElementById('user-list').innerHTML = userListHTML || '<div style="padding: 20px; text-align: center; color: #999;">Keine Benutzer gefunden</div>';
+                document.getElementById('user-list').innerHTML = topHTML || '<div style="padding: 20px; text-align: center; color: #999;">Keine Benutzer gefunden</div>';
+                
+                // All users
+                const allHTML = users.map((user, i) => `
+                    <div class="user-item">
+                        <div>
+                            <span class="user-name">${user.name}</span><br>
+                            <small style="color: #999;">ID: ${user.id}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="user-level" style="margin-bottom: 5px;">Level ${user.level}</div>
+                            <small style="color: #999;">${user.money}€</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('users-full').innerHTML = allHTML || '<div style="padding: 20px; text-align: center; color: #999;">Keine Benutzer gefunden</div>';
             } catch (error) {
-                console.error('Fehler beim Laden der Daten:', error);
+                console.error('User Fehler:', error);
             }
         }
         
-        // Starte Daten Laden
-        loadStatus();
-        loadUsers();
+        async function loadCommands() {
+            try {
+                const res = await fetch('/api/admin/commands', {
+                    headers: { 'Authorization': authToken }
+                });
+                const commands = await res.json();
+                
+                let html = '';
+                for (const [cmd, enabled] of Object.entries(commands)) {
+                    html += `
+                        <div class="command-item">
+                            <span style="font-weight: 600;">/${cmd}</span>
+                            <div class="command-toggle">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleCommand('${cmd}', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                }
+                document.getElementById('commands-list').innerHTML = html;
+            } catch (error) {
+                console.error('Commands Fehler:', error);
+            }
+        }
         
-        // Aktualisiere alle 5 Sekunden
-        setInterval(loadUsers, 5000);
+        async function toggleCommand(cmd, enabled) {
+            try {
+                const res = await fetch(`/api/admin/command/${cmd}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken
+                    },
+                    body: JSON.stringify({ enabled })
+                });
+                const data = await res.json();
+                console.log('Command toggled:', data);
+            } catch (error) {
+                console.error('Toggle Error:', error);
+            }
+        }
+        
+        async function banUser() {
+            const user = document.getElementById('ban-user-input').value;
+            if (!user) {
+                alert('Bitte Benutzer eingeben');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/admin/ban/${user}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': authToken },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('ban-user-input').value = '';
+                    loadBannedUsers();
+                    alert('Benutzer erfolgreich gebannt!');
+                }
+            } catch (error) {
+                alert('Ban Fehler: ' + error.message);
+            }
+        }
+        
+        async function unbanUser(user) {
+            try {
+                const res = await fetch(`/api/admin/unban/${user}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': authToken },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadBannedUsers();
+                    alert('Benutzer entbannt!');
+                }
+            } catch (error) {
+                alert('Unban Fehler: ' + error.message);
+            }
+        }
+        
+        async function loadBannedUsers() {
+            try {
+                const res = await fetch('/api/admin/status', {
+                    headers: { 'Authorization': authToken }
+                });
+                const data = await res.json();
+                
+                const banned = data.bannedUsers || [];
+                let html = '';
+                
+                if (banned.length === 0) {
+                    html = '<div style="padding: 20px; text-align: center; color: #999;">Keine Benutzer gebannt</div>';
+                } else {
+                    html = banned.map(user => `
+                        <div class="ban-item">
+                            <span style="font-weight: 600;">${user}</span>
+                            <button class="btn btn-success" onclick="unbanUser('${user}')">Entbannen</button>
+                        </div>
+                    `).join('');
+                }
+                
+                document.getElementById('ban-list').innerHTML = html;
+            } catch (error) {
+                console.error('Ban List Fehler:', error);
+            }
+        }
+        
+        function filterUsers() {
+            const search = document.getElementById('user-search').value.toLowerCase();
+            const items = document.querySelectorAll('#users-full .user-item');
+            
+            items.forEach(item => {
+                const name = item.textContent.toLowerCase();
+                item.style.display = name.includes(search) ? 'flex' : 'none';
+            });
+        }
+        
+        // Check if logged in
+        window.addEventListener('load', () => {
+            if (authToken) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadDashboard();
+            } else {
+                document.getElementById('login-screen').style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>
