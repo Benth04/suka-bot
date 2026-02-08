@@ -116,7 +116,14 @@ async function startBot() {
 /deposit <betrag> - Geld einzahlen
 /withdraw <betrag> - Geld abheben
 /pay @user <betrag> - Geld senden
-/daily - Tägliche 500€`);
+/daily - Tägliche 500€
+/weather <stadt> - Wetter anzeigen
+/news - Neuigkeiten anzeigen
+/remind <zeit> <nachricht> - Erinnerung setzen
+/translate <sprache> <text> - Text übersetzen
+/gif <suchbegriff> - GIF suchen
+/fact - Zufälligen Fakt anzeigen
+/play <songname> - Song abspielen`);
             }
             
             if(menuNum === '2') {
@@ -152,11 +159,15 @@ Items: house, car, bmw_m4, mercedes_c63, yacht, privatejet, cannabis, luxuryshir
             }
             
             if(menuNum === '4') {
-                if(sender !== BOT_OWNER) return send('❌ Du bist kein Owner!');
                 return send(`
 🎮 *Gaming Commands* 🎮
 
-_*In Entwicklung...*_`);
+/dice - Würfeln
+/rps <rock|paper|scissors> - Schere Stein Papier
+/leaderboard - Top Spieler anzeigen
+/poll <frage> <option1> <option2> ... - Umfrage erstellen
+/joke - Witz erzählen
+/quote - Motivationszitat`);
             }
 
             if(menuNum === '5') {
@@ -434,6 +445,68 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
             return sendText(sender, `🏆 Top Spieler:\n${top || 'Noch keine Spieler'}`);
         }
 
+        if(command === '/poll') {
+            const question = args[1];
+            const options = args.slice(2);
+            createPoll(sender, question, options); // Implement createPoll function
+            return sendText(sender, `📊 Umfrage erstellt: ${question}\nOptionen: ${options.join(', ')}`);
+        }
+
+        if(command === '/joke') {
+            const joke = await getRandomJoke(); // Implement getRandomJoke function
+            return sendText(sender, `😂 Witz: ${joke}`);
+       }
+
+        if(command === '/quote') {
+            const quote = await getMotivationalQuote(); // Implement getMotivationalQuote function
+            return sendText(sender, `💬 Zitat: ${quote}`);
+        }
+
+        // ===== Commands =====
+
+        if(command === '/weather') {
+            const city = args[1];
+            if (!city) return sendText(sender, '❌ Bitte gib eine Stadt an.');
+            // Fetch weather data from an API (e.g., OpenWeatherMap)
+            const weather = await getWeather(city); // Implement getWeather function
+            return sendText(sender, `🌤️ Wetter in ${city}: ${weather}`);
+        }
+
+        if(command === '/news') {
+            const news = await fetchLatestNews(); // Implement fetchLatestNews function
+            return sendText(sender, `📰 Neuigkeiten: ${news}`);
+        }
+
+        if(command === '/remind') {
+            const time = args[1];
+            const message = args.slice(2).join(' ');
+            setReminder(sender, time, message); // Implement setReminder function
+            return sendText(sender, `⏰ Erinnerung gesetzt für ${time}: ${message}`);
+        }
+
+        if(command === '/translate') {
+            const language = args[1];
+            const text = args.slice(2).join(' ');
+            const translatedText = await translateText(language, text); // Implement translateText function
+            return sendText(sender, `🌐 Übersetzung: ${translatedText}`);
+        }
+
+        if(command === '/gif') {
+            const searchTerm = args[1];
+            const gifUrl = await fetchGif(searchTerm); // Implement fetchGif function
+            return sendText(sender, gifUrl);
+        }
+
+        if(command === '/fact') {
+            const fact = await getRandomFact(); // Implement getRandomFact function
+            return sendText(sender, `🔍 Fakt: ${fact}`);
+        }
+
+        if(command === '/play') {
+            const songName = args.slice(1).join(' ');
+            playSong(songName); // Implement playSong function
+            return sendText(sender, `🎶 Jetzt spiele ich: ${songName}`);
+        }
     }
 }
 
