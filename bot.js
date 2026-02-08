@@ -101,7 +101,8 @@ async function startBot() {
 1️⃣ Economy & Inventar 💰🎒
 2️⃣ Shop & Autos/Häuser 🚗🏠
 3️⃣ Fun & Chaos 😂🎲
-4️⃣ Owner 🔑
+4️⃣ Gaming 🎮
+5️⃣ Owner 🔑
 _Tippe z.B. "/balance" für Economy_`);
         }
 
@@ -332,6 +333,31 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
         if(command==='/clan war'){
             const targetClan=args[1]; if(!targetClan) return sendText(sender,'❌ Syntax: /clan war <clan>');
             return sendText(sender, `⚔️ Clankrieg gegen ${targetClan} gestartet!`);
+        }
+
+        // ===== Gaming =====
+        if(command==='/dice'){
+            const roll = Math.floor(Math.random() * 6) + 1;
+            return sendText(sender, `🎲 Du würfelst: ${roll}`);
+        }
+
+        if(command==='/rps'){
+            const raw = (args[1] || '').toLowerCase();
+            const map = { stein: 'rock', papier: 'paper', schere: 'scissors' };
+            const choice = map[raw] || raw;
+            const opts = ['rock','paper','scissors'];
+            if(!opts.includes(choice)) return sendText(sender, '❌ Nutze: /rps <rock|paper|scissors> (oder deutsch: stein/papier/schere)');
+            const botPick = opts[Math.floor(Math.random()*3)];
+            let result = 'Unentschieden';
+            if((choice==='rock'&&botPick==='scissors')||(choice==='paper'&&botPick==='rock')||(choice==='scissors'&&botPick==='paper')) result='✅ Du gewinnst!';
+            else if(choice!==botPick) result='❌ Du verlierst!';
+            return sendText(sender, `🕹️ Du: ${choice}\nBot: ${botPick}\n${result}`);
+        }
+
+        if(command==='/leaderboard'){
+            const top = Object.entries(userData).sort((a,b)=>b[1].money - a[1].money).slice(0,5)
+                .map(([k,v],i) => `${i+1}. ${k.split('@')[0]} — ${v.money}€`).join('\n');
+            return sendText(sender, `🏆 Top Spieler:\n${top || 'Noch keine Spieler'}`);
         }
     }
 }
