@@ -8,12 +8,14 @@ console.log("🤖 BOT MIT ~150 COMMANDS STARTET JETZT");
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
+const { startWebsite } = require('./website');
 
 const PREFIX = '/';
 const BOT_OWNER = '+49 1515 0928935@s.whatsapp.net';
 const OWNER_LID = '2472489695390@lid';
 const DB_FILE = './database.json';
 const START_TIME = Date.now();
+let websiteStarted = false;
 
 let db = { users: {} };
 if (fs.existsSync(DB_FILE)) {
@@ -124,11 +126,22 @@ async function startBot() {
     const args = text.slice(1).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const user = getUser(sender);
-    const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
+    
+    // Owner Check - 3 verschiedene Formate akzeptieren
+    const isOwner = sender === BOT_OWNER || 
+                    sender === BOT_OWNER.replace('@s.whatsapp.net', '') || 
+                    sender === OWNER_LID ||
+                    sender.includes('1515') || // Fallback für ähnliche Nummern
+                    sender.includes('2472489695390'); // LID
 
     // Helper
     async function send(text) {
       await sock.sendMessage(from, { text });
+    }
+
+    // Debug: Owner Status anzeigen bei Owner Commands
+    if(OWNER_CMDS.includes(cmd) && !isOwner) {
+      return send(`❌ Du bist kein Owner! Du brauchst Owner-Rechte für diesen Command.\n\n👤 Deine ID: ${sender}`);
     }
 
     // Unbekannte Commands
@@ -664,18 +677,22 @@ XP: ${user.xp}
     if(isOwner) {
       if(cmd === 'addmoney') {
         const amount = Number(args[0]);
-        if(isNaN(amount)) return send('❌ Gib einen Betrag an!');
-        user.money += amount;
+        if(isNaN(amount)) return send('❌ Gib einen Betrag an! /addmoney <betrag> [@user]');
+        const targetUser = args[1] ? (args[1].replace('@', '')+'@s.whatsapp.net') : sender;
+        if(!db.users[targetUser]) db.users[targetUser] = getUser(targetUser);
+        db.users[targetUser].money += amount;
         saveDB();
-        return send(`✅ +${amount}€ hinzugefügt!`);
+        return send(`✅ ${amount}€ zu ${targetUser.split('@')[0]} hinzugefügt! Neuer Betrag: ${db.users[targetUser].money}€`);
       }
 
       if(cmd === 'setmoney') {
         const amount = Number(args[0]);
-        if(isNaN(amount)) return send('❌ Gib einen Betrag an!');
-        user.money = amount;
+        const targetUser = args[1] ? (args[1].replace('@', '')+'@s.whatsapp.net') : sender;
+        if(isNaN(amount)) return send('❌ Gib einen Betrag an! /setmoney <betrag> [@user]');
+        if(!db.users[targetUser]) db.users[targetUser] = getUser(targetUser);
+        db.users[targetUser].money = amount;
         saveDB();
-        return send(`✅ Geld auf ${amount}€ gesetzt!`);
+        return send(`✅ Geld von ${targetUser.split('@')[0]} auf ${amount}€ gesetzt!`);
       }
 
       if(cmd === 'resetuser') {
@@ -726,6 +743,18 @@ XP: ${user.xp}
 
   console.log('🚀 SUKA SUPREME BOT v2.0 - READY!');
 }
+
+// Starte Website parallel
+if (!websiteStarted) {
+  websiteStarted = true;
+  console.log('🌐 Starte Website Server...');
+  startWebsite();
+}
+
+startBot().catch(err => {
+  console.error('❌ Bot Fehler:', err);
+  process.exit(1);
+});
 
 startBot().catch(err => {
   console.error('❌ Fehler:', err);
