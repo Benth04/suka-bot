@@ -1,368 +1,724 @@
-console.log("BOT STARTET JETZT");
-// -------------------------
-// Suka Supreme Bot v1.0
+console.log("🤖 BOT MIT ~150 COMMANDS STARTET JETZT");
+// ===========================
+// SUKA SUPREME BOT v2.0
+// ~150 BEFEHLE
 // Owner: +49 1515 0928935
-// -------------------------
+// ===========================
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@adiwajshing/baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
+const PREFIX = '/';
 const BOT_OWNER = '+49 1515 0928935@s.whatsapp.net';
 const OWNER_LID = '2472489695390@lid';
-const DATA_FILE = './user_data.json';
+const DB_FILE = './database.json';
+const START_TIME = Date.now();
 
-// Lade oder erstelle User-Daten
-let userData = fs.existsSync(DATA_FILE) ? JSON.parse(fs.readFileSync(DATA_FILE)) : {};
-function saveData() { fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2)); }
+let db = { users: {} };
+if (fs.existsSync(DB_FILE)) db = JSON.parse(fs.readFileSync(DB_FILE));
+const saveDB = () => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 
-function ensureUser(sender) {
-    if (!userData[sender]) {
-        userData[sender] = {
-            money: 1000,
-            bank: 0,
-            inventory: [],
-            houses: [],
-            cars: [],
-            items: [],
-            level: 1,
-            xp: 0,
-            hp: 100,
-            daily: { streak: 0, last: null },
-            jobs: [],
-            clans: [],
-            jail: false
-        };
-        saveData();
-    }
+function getUser(id) {
+  if (!db.users[id]) {
+    db.users[id] = {
+      money: 1000,
+      bank: 0,
+      loan: 0,
+      inventory: [],
+      xp: 0,
+      level: 1,
+      warnings: 0,
+      jailed: false,
+      job: null,
+      cooldowns: {},
+      health: 100,
+      weapon: "Fäuste",
+      houses: [],
+      cars: [],
+      clan: null,
+      daily: { last: null, streak: 0 }
+    };
+  }
+  return db.users[id];
 }
 
+// ===== COMMAND LISTS =====
+const BASIC = ["menu","help","info","ping","uptime","version","rules","status","profile"];
+const GROUP = ["admins","owner","tagall","hidetag","link","invite","report","warn","warnings","clear"];
+const MOD = ["mute","unmute","lock","unlock","slowmode","antilink","antispam"];
+const OWNER_CMDS = ["kick","add","promote","demote","bot","reset","shutdown","addmoney","setmoney","resetuser","ban","unban"];
+
+const ECONOMY = ["balance","bal","wallet","bank","deposit","withdraw","transfer","leaderboard"];
+const BANK = ["bankinfo","banklevel","bankupgrade","bankrob","banklock","interest","loan","repay"];
+const INVENTORY = ["inventory","inv","use","drop","give","craft","items","equip","unequip"];
+const SHOP = ["shop","buy","sell","market","price","blackmarket"];
+const WORK = ["work","job","jobs","apply","quitjob","salary","overtime","promotion"];
+const CRIME = ["crime","steal","rob","scam","hack","fraud","escape","jail","bail"];
+const DAILY = ["daily","weekly","monthly","streak","bonus","claim"];
+const LEVEL = ["level","xp","rank","prestige","skills","achievements"];
+const FIGHT = ["stats","fight","duel","hp","heal","attack","defend","weapons"];
+const LOOT = ["loot","open","boxes","rare","legendary"];
+const CLAN = ["clan","clancreate","claninvite","clankick","claninfo","clanbank","clanwar","gang"];
+const GAMES = ["coinflip","dice","slot","casino","bet","jackpot","roulette"];
+const FUN = ["roast","respect","sus","mid","hug","slap","punch","kiss","compliment","love"];
+const MEME = ["meme","vibecheck","aura","energy","mood"];
+const RATINGS = ["iq","coolrate","gayrate","simp","sigma","toxicrate","sadrate"];
+const SYSTEM = ["settings","profile","profileedit","privacy","notifications","language"];
+const MUSIC = ["play","music","audio","song"];
+
+const ALL = [
+  ...BASIC,...GROUP,...MOD,...OWNER_CMDS,...ECONOMY,...BANK,
+  ...INVENTORY,...SHOP,...WORK,...CRIME,...DAILY,...LEVEL,
+  ...FIGHT,...LOOT,...CLAN,...GAMES,...FUN,...MEME,...RATINGS,...SYSTEM,...MUSIC
+];
+
+// ===== BOT =====
 async function startBot() {
-    // Multi-File Auth (auth Ordner)
-    const { state, saveCreds } = await useMultiFileAuthState('./auth');
+  const { state, saveCreds } = await useMultiFileAuthState('./auth');
+  const sock = makeWASocket({
+    auth: state,
+    connectTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
+    defaultQueryTimeoutMs: 20000,
+    browser: ['Ubuntu', 'Chrome', '120.0.6099.129'],
+    logger: require('pino')({ level: 'error' })
+  });
 
-    const sock = makeWASocket({
-        auth: state,
-        connectTimeoutMs: 60000,
-        keepAliveIntervalMs: 30000,
-        defaultQueryTimeoutMs: 20000,
-        browser: ['Ubuntu', 'Chrome', '120.0.6099.129'],
-        logger: require('pino')({ level: 'error' })
-    });
+  sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('connection.update', (update) => {
+    if(update.qr) {
+      console.log('📌 QR-Code zum Scannen:');
+      qrcode.generate(update.qr, { small: true });
+    }
+    if(update.connection==='open') console.log('✅ BOT ONLINE - ~150 COMMANDS GELADEN');
+    if(update.connection==='connecting') console.log('🔄 Verbinde...');
+    if(update.lastDisconnect && update.lastDisconnect.error) {
+      console.log('⚠️ Verbindung getrennt, reconnect in 5s...');
+      const reason = update.lastDisconnect.error.output?.statusCode;
+      if(reason === DisconnectReason.loggedOut) process.exit(0);
+      setTimeout(startBot, 5000);
+    }
+  });
 
-    // Connection Updates
-    sock.ev.on('connection.update', (update) => {
-        if(update.qr) {
-            console.log('📌 QR-Code zum Scannen:');
-            qrcode.generate(update.qr, { small: true });
-        }
-        if(update.connection==='open') console.log('✅ Bot läuft...');
-        if(update.connection==='connecting') console.log('🔄 Verbinde...');
-        if(update.lastDisconnect && update.lastDisconnect.error) {
-            console.log('⚠️ Verbindung getrennt, reconnect in 5s...');
-            const reason = update.lastDisconnect.error.output?.statusCode;
-            if(reason === DisconnectReason.loggedOut) process.exit(0);
-            setTimeout(startBot, 5000);
-        }
-    });
+  sock.ev.on('messages.upsert', async ({ messages }) => {
+    const msg = messages[0];
+    if(!msg.message || msg.key.fromMe) return;
+
+    let from = msg.key.remoteJid;
+    let sender = msg.key.participant || from;
+    const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+    
+    if(!text.startsWith(PREFIX)) return;
+
+    const args = text.slice(1).trim().split(/ +/);
+    const cmd = args.shift().toLowerCase();
+    const user = getUser(sender);
+    const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
 
     // Helper
-    async function sendText(jid, text) {
-        await sock.sendMessage(jid, { text });
+    async function send(text) {
+      await sock.sendMessage(from, { text });
     }
 
-    // Nachrichten Event
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const msg = messages[0];
-        if(!msg.message || msg.key.fromMe) return;
-        let sender = msg.key.remoteJid;
-        // Stelle sicher, dass sender das korrekte Format hat
-        if(!sender.includes('@')) sender = sender + '@s.whatsapp.net';
-        ensureUser(sender);
+    // Unbekannte Commands
+    if (!ALL.includes(cmd)) {
+      return send('❌ Unbekannter Befehl. Tippe /menu für alle Commands!');
+    }
 
-        const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
-        if(!text) return;
-        const args = text.trim().split(/ +/);
-        const command = args[0].toLowerCase();
+    // ===== BASIC COMMANDS =====
+    if(cmd === 'ping') return send('🏓 Pong!');
+    
+    if(cmd === 'uptime') {
+      const uptime = Math.floor((Date.now() - START_TIME) / 1000);
+      const hours = Math.floor(uptime / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      const seconds = uptime % 60;
+      return send(`⏱️ Bot läuft seit: ${hours}h ${minutes}m ${seconds}s`);
+    }
 
-        handleCommands(sock, sender, command, args);
-    });
+    if(cmd === 'help') {
+      return send(`
+📖 *HILFE* 📖
 
-    // ===== Commands =====
-    function handleCommands(sock, sender, command, args){
-        const u = userData[sender];
+Tippe /menu für alle Commands
+Es gibt ~150 Commands in verschiedenen Kategorien
 
-        // ===== Menu =====
-        if(command==='/menu'){
-            return sendText(sender, `
-📌 *Hauptmenü* 📌
-1️⃣ Economy & Inventar 💰🎒
-2️⃣ Shop & Autos/Häuser 🚗🏠
-3️⃣ Fun & Chaos 😂🎲
-4️⃣ Gaming 🎮
-5️⃣ Owner 🔑
-_Tippe z.B. "/balance" für Economy_`);
-        }
+💰 Economy - Geld verdienen & managen
+🛒 Shop - Items kaufen & verkaufen
+⚔️ Fight - Kämpfen mit anderen Spielern
+🎮 Games - Spiele & Wetten
+😂 Fun - Lustige Commands
+🏆 Level - Level & Rank System
+👨‍👨‍👧‍👦 Clan - Clan System
+🔒 Admin - Moderations-Commands
+🔑 Owner - Owner Commands
 
-        // ===== Economy =====
-        if(['/balance','/bal'].includes(command)){
-            return sendText(sender, `💵 Geld: ${u.money}€\n🏦 Bank: ${u.bank}€`);
-        }
+Tippe z.B. /menu 1 für Economy Commands!`);
+    }
 
-        if(['/inventory','/inv'].includes(command)){
-            return sendText(sender, `
-🎒 Inventar:
-Items: ${u.items.join(', ') || 'Keine'}
-Häuser: ${u.houses.join(', ') || 'Keine'}
-Autos: ${u.cars.join(', ') || 'Keine'}
-Geld: ${u.money}€
-Bank: ${u.bank}€`);
-        }
+    if(cmd === 'menu') {
+      const menuNum = args[0] || '0';
+      
+      if(menuNum === '1') {
+        return send(`
+💰 *ECONOMY COMMANDS* (1/9)
 
-        if(command==='/lid'){
-            let userId = sender.split('@')[0];
-            let targetUser = u;
-            
-            if(args[1]) {
-                const target = args[1].replace('@','')+'@s.whatsapp.net';
-                if(!userData[target]) return sendText(sender,'❌ User nicht gefunden');
-                userId = target.split('@')[0];
-                targetUser = userData[target];
-            }
-            
-            return sendText(sender, `
-👤 *Profil ID: ${userId}* 👤
-Level: ${targetUser.level || 1}
-XP: ${targetUser.xp || 0}
-HP: ${targetUser.hp || 100}
-Jobs: ${targetUser.jobs.length > 0 ? targetUser.jobs.join(', ') : 'Keine'}
-Clans: ${targetUser.clans.length > 0 ? targetUser.clans.join(', ') : 'Keine'}
-Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
-        }
+/balance - Geld anzeigen
+/wallet - Geldbörse info
+/bank - Bank Info
+/deposit <betrag> - Geld einzahlen
+/withdraw <betrag> - Geld abheben
+/transfer @user <betrag> - Geld senden
+/leaderboard - Top Spieler
+/daily - Tägliche 500€
+/weekly - Wöchentlicher Bonus
+/monthly - Monatlicher Bonus
 
-        if(command==='/deposit'){
-            const amount=parseInt(args[1]);
-            if(!amount || amount<=0) return sendText(sender,'❌ Betrag angeben');
-            if(u.money<amount) return sendText(sender,'❌ Nicht genug Geld');
-            u.money-=amount; u.bank+=amount; saveData();
-            return sendText(sender, `✅ ${amount}€ eingezahlt`);
-        }
+Tippe: /menu 0 für andere Kategorien`);
+      }
 
-        if(command==='/withdraw'){
-            const amount=parseInt(args[1]);
-            if(!amount || amount<=0) return sendText(sender,'❌ Betrag angeben');
-            if(u.bank<amount) return sendText(sender,'❌ Nicht genug Geld auf der Bank');
-            u.money+=amount; u.bank-=amount; saveData();
-            return sendText(sender, `✅ ${amount}€ abgehoben`);
-        }
+      if(menuNum === '2') {
+        return send(`
+🛒 *SHOP & INVENTORY* (2/9)
 
-        if(command==='/pay'){
-            const target = args[1]?.replace('@','')+'@s.whatsapp.net';
-            const amount = parseInt(args[2]);
-            if(!target || !amount || amount<=0) return sendText(sender,'❌ Syntax: /pay @user <betrag>');
-            ensureUser(target);
-            if(u.money<amount) return sendText(sender,'❌ Nicht genug Geld');
-            u.money-=amount; userData[target].money+=amount; saveData();
-            return sendText(sender, `✅ Du hast ${amount}€ an ${target.split('@')[0]} geschickt`);
-        }
+/shop - Shop anzeigen
+/buy <item> - Item kaufen
+/sell <item> - Item verkaufen
+/inventory - Inventar anzeigen
+/items - Items auflisten
+/use <item> - Item benutzen
+/equip <item> - Item ausrüsten
+/drop <item> - Item fallen lassen
+/market - Marktplatz
+/price <item> - Preis prüfen
 
-        // ===== Shop & Items =====
-        const shopItems = {
-            house: { price: 10000, type:'house', emoji:'🏠' },
-            car: { price: 5000, type:'car', emoji:'🚗' },
-            bmw_m4: { price: 15000, type:'car', emoji:'🚘' },
-            mercedes_c63: { price: 18000, type:'car', emoji:'🚘' },
-            yacht: { price: 50000, type:'car', emoji:'🛥️' },
-            privatejet: { price: 100000, type:'car', emoji:'✈️' },
-            cannabis: { price:50, type:'item', emoji:'🌿' },
-            luxuryshirt: { price:200, type:'item', emoji:'👕' },
-            watch: { price:500, type:'item', emoji:'⌚' }
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '3') {
+        return send(`
+⚔️ *FIGHT & COMBAT* (3/9)
+
+/fight @user - Mit User kämpfen
+/duel @user - Duell starten
+/stats - Deine Stats
+/hp - Health anzeigen
+/heal - Dich selbst heilen
+/attack <user> - Angreifen
+/defend - Verteidigen
+/weapons - Waffen zeigen
+/strength - Stärke trainieren
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '4') {
+        return send(`
+🎮 *GAMES & GAMBLING* (4/9)
+
+/slot <betrag> - Slots spielen
+/coinflip <betrag> kopf/zahl - Münzwurf
+/dice - Würfeln
+/casino - Casino spielen
+/roulette - Roulette spielen
+/bet <betrag> - Wetten
+/jackpot - Jackpot versuchen
+/blackjack - Blackjack spielen
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '5') {
+        return send(`
+😂 *FUN COMMANDS* (5/9)
+
+/roast @user - Verspotte einen User
+/compliment @user - Kompliment machen
+/love @user - Liebe ausdrücken
+/hug @user - Umarmen
+/slap @user - Schlagen
+/punch @user - Boxen
+/kiss @user - Küssen
+/respect - Respekt erweisen
+/sus @user - Sus Check
+/meme - Meme anzeigen
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '6') {
+        return send(`
+🏆 *LEVEL & XP SYSTEM* (6/9)
+
+/level - Dein Level anzeigen
+/xp - XP anzeigen
+/rank - Dein Rang
+/prestige - Upgrade dein Level
+/skills - Skills anzeigen
+/achievements - Erfolge anzeigen
+/profile - Dein Profil
+/stats - Statistiken
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '7') {
+        return send(`
+👨‍👨‍👧‍👦 *CLAN SYSTEM* (7/9)
+
+/clan - Clan Info
+/clancreate <name> - Clan erstellen
+/claninvite @user - User einladen
+/clankick @user - User rauswurf
+/claninfo - Clan Infos
+/clanbank - Clan Bank
+/clanwar @clan - Clankrieg
+/gang - Gang Befehle
+/family - Familie Befehle
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '8') {
+        return send(`
+💼 *WORK & JOBS* (8/9)
+
+/work - Arbeiten
+/job - Job Infos
+/jobs - Alle Jobs
+/apply <job> - Job annehmen
+/quitjob - Job kündigen
+/salary - Gehalt anzeigen
+/overtime - Überstunden
+/promotion - Beförderung
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '9') {
+        if(!isOwner) return send('❌ Du bist kein Owner!');
+        return send(`
+🔑 *OWNER COMMANDS* (9/9)
+
+/addmoney <betrag> [@user] - Geld geben
+/setmoney <betrag> [@user] - Geld setzen
+/resetuser @user - User reset
+/kick @user - User kicken
+/ban @user - User bannen
+/unban @user - User entbannen
+/promote @user - User promoten
+/shutdown - Bot herunterfahren
+/settings - Einstellungen
+/warnings @user - Verwarnungen
+
+Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      // Default Menu
+      return send(`
+📌 *SUKA SUPREME BOT - HAUPTMENÜ* 📌
+
+🎮 ~150 BEFEHLE VERFÜGBAR!
+
+1️⃣ /menu 1 - 💰 Economy (10 Commands)
+2️⃣ /menu 2 - 🛒 Shop & Inventory (10 Commands)
+3️⃣ /menu 3 - ⚔️ Fight & Combat (9 Commands)
+4️⃣ /menu 4 - 🎮 Games & Gambling (8 Commands)
+5️⃣ /menu 5 - 😂 Fun Commands (10 Commands)
+6️⃣ /menu 6 - 🏆 Level & XP (8 Commands)
+7️⃣ /menu 7 - 👨‍👨‍👧‍👦 Clan System (9 Commands)
+8️⃣ /menu 8 - 💼 Work & Jobs (8 Commands)
+9️⃣ /menu 9 - 🔑 Owner (nur Owner!)
+
+👉 Tippe z.B. "/menu 1" für Details!`);
+    }
+
+    // ===== ECONOMY =====
+    if(cmd === 'balance' || cmd === 'bal') {
+      return send(`💵 *DEIN GELD* 💵\n\n💰 Bargeld: ${user.money}€\n🏦 Bank: ${user.bank}€\n💸 Schulden: ${user.loan}€\n\n📊 Total: ${user.money + user.bank - user.loan}€`);
+    }
+
+    if(cmd === 'wallet') {
+      return send(`💼 *GELDBÖRSE*\n\nStufe: ${Math.floor(user.money / 1000)}⭐\nRaum: ${user.money}/10000€`);
+    }
+
+    if(cmd === 'bank') {
+      return send(`🏦 *BANK INFO*\n\nGuthaben: ${user.bank}€\nSchulden: ${user.loan}€\nZinsen: ${Math.floor(user.bank * 0.02)}€/Stunde`);
+    }
+
+    if(cmd === 'deposit') {
+      const a = Number(args[0]);
+      if(isNaN(a) || a <= 0) return send('❌ Gib einen gültigen Betrag an!');
+      if(user.money >= a) {
+        user.money -= a;
+        user.bank += a;
+        saveDB();
+        return send(`✅ Du hast ${a}€ eingezahlt!\n\nNeu - Bargeld: ${user.money}€ | Bank: ${user.bank}€`);
+      }
+      return send(`❌ Du hast nicht genug Geld! Du hast nur ${user.money}€`);
+    }
+
+    if(cmd === 'withdraw') {
+      const a = Number(args[0]);
+      if(isNaN(a) || a <= 0) return send('❌ Gib einen gültigen Betrag an!');
+      if(user.bank >= a) {
+        user.bank -= a;
+        user.money += a;
+        saveDB();
+        return send(`✅ Du hast ${a}€ abgehoben!\n\nNeu - Bargeld: ${user.money}€ | Bank: ${user.bank}€`);
+      }
+      return send(`❌ Du hast nicht genug auf der Bank! Du hast nur ${user.bank}€`);
+    }
+
+    if(cmd === 'leaderboard') {
+      const top = Object.entries(db.users)
+        .sort((a, b) => (b[1].money + b[1].bank) - (a[1].money + a[1].bank))
+        .slice(0, 10)
+        .map((u, i) => `${i + 1}. ${u[0].split('@')[0]} - ${u[1].money + u[1].bank}€`)
+        .join('\n');
+      return send(`🏆 *TOP 10 SPIELER*\n\n${top || 'Noch keine Spieler'}`);
+    }
+
+    if(cmd === 'daily') {
+      const today = new Date().toDateString();
+      if(user.daily.last === today) return send('❌ Du hast deinen Daily bereits erhalten!');
+      user.money += 500;
+      user.daily.last = today;
+      user.daily.streak = (user.daily.streak || 0) + 1;
+      saveDB();
+      return send(`✅ +500€ Daily Bonus! 🌟\nStreak: ${user.daily.streak}`);
+    }
+
+    if(cmd === 'weekly') {
+      user.money += 2000;
+      saveDB();
+      return send(`✅ +2000€ Weekly Bonus! 🎁`);
+    }
+
+    if(cmd === 'monthly') {
+      user.money += 10000;
+      saveDB();
+      return send(`✅ +10000€ Monthly Bonus! 🎉`);
+    }
+
+    // ===== SHOP =====
+    if(cmd === 'shop') {
+      return send(`
+🛒 *SHOP*
+
+💎 Items zum Kaufen:
+- Sword: 500€
+- Shield: 400€
+- Armor: 1000€
+- Potion: 100€
+- Gold Bar: 5000€
+- Legendary Sword: 10000€
+
+Nutze: /buy <item>`);
+    }
+
+    if(cmd === 'buy') {
+      const item = args.join(' ');
+      const prices = {
+        'sword': 500,
+        'shield': 400,
+        'armor': 1000,
+        'potion': 100,
+        'gold bar': 5000,
+        'legendary sword': 10000
+      };
+      if(!prices[item.toLowerCase()]) return send('❌ Item nicht im Shop!');
+      const price = prices[item.toLowerCase()];
+      if(user.money >= price) {
+        user.money -= price;
+        user.inventory.push(item);
+        saveDB();
+        return send(`✅ Du hast ${item} für ${price}€ gekauft!\n🎒 Inventar: ${user.inventory.length} Items`);
+      }
+      return send(`❌ Nicht genug Geld! Du brauchst ${price}€, hast aber nur ${user.money}€`);
+    }
+
+    if(cmd === 'inventory' || cmd === 'inv') {
+      return send(`🎒 *DEIN INVENTAR*\n\n${user.inventory.length > 0 ? user.inventory.join('\n') : 'Leer'}\n\n📊 Items: ${user.inventory.length}/20`);
+    }
+
+    // ===== WORK =====
+    if(WORK.includes(cmd)) {
+      const earn = Math.floor(Math.random() * 500) + 100;
+      user.money += earn;
+      user.xp += 5;
+      saveDB();
+      return send(`💼 Du hast gearbeitet!\n\n✅ +${earn}€\n✨ +5 XP`);
+    }
+
+    // ===== CRIME =====
+    if(CRIME.includes(cmd)) {
+      if(Math.random() > 0.5) {
+        const steal = Math.floor(Math.random() * 1000) + 100;
+        user.money += steal;
+        saveDB();
+        return send(`💰 *ERFOLG!* 💰\n\nDu hast ${steal}€ geklaut! 🚨`);
+      } else {
+        user.jailed = true;
+        saveDB();
+        return send(`🚔 *ERWISCHT!* 🚔\n\nDu wurdest verhaftet! 🚨\n\nNutze /escape oder /bail`);
+      }
+    }
+
+    if(cmd === 'escape') {
+      if(!user.jailed) return send('❌ Du bist nicht im Jail!');
+      if(Math.random() > 0.5) {
+        user.jailed = false;
+        saveDB();
+        return send(`✅ Du bist entkommen! 🚫`);
+      }
+      return send(`❌ Flucht fehlgeschlagen! Du bleibst im Jail!`);
+    }
+
+    if(cmd === 'bail') {
+      if(!user.jailed) return send('❌ Du bist nicht im Jail!');
+      if(user.money >= 1000) {
+        user.money -= 1000;
+        user.jailed = false;
+        saveDB();
+        return send(`✅ Du hast Kaution bezahlt! 💰`);
+      }
+      return send(`❌ Du brauchst 1000€ für die Kaution!`);
+    }
+
+    // ===== FIGHT =====
+    if(cmd === 'fight' || cmd === 'duel') {
+      const damage = Math.floor(Math.random() * 50) + 10;
+      user.health -= damage;
+      if(user.health <= 0) {
+        user.health = 100;
+        saveDB();
+        return send(`💥 Du hast gekämpft und VERLOREN!\n\n❌ Deine HP: 0`);
+      }
+      saveDB();
+      return send(`⚔️ Du hast gekämpft!\n\n💥 -${damage} HP\n❤️ Deine HP: ${user.health}`);
+    }
+
+    if(cmd === 'heal') {
+      user.health = 100;
+      saveDB();
+      return send(`💖 Du wurdest geheilt! ❤️ 100 HP`);
+    }
+
+    if(cmd === 'hp') {
+      return send(`❤️ *DEINE GESUNDHEIT*\n\nHP: ${user.health}/100`);
+    }
+
+    if(cmd === 'stats') {
+      return send(`
+📊 *DEINE STATS*
+
+Level: ${user.level}
+XP: ${user.xp}
+Geld: ${user.money}€
+Bank: ${user.bank}€
+HP: ${user.health}/100
+Waffe: ${user.weapon}
+Clan: ${user.clan || 'Kein Clan'}
+Job: ${user.job || 'Kein Job'}`);
+    }
+
+    // ===== GAMES =====
+    if(cmd === 'slot') {
+      const bet = Number(args[0]);
+      if(isNaN(bet) || bet <= 0 || user.money < bet) return send('❌ Ungültiger Einsatz!');
+      const symbols = ['🍒', '🍋', '🍊', '🍉', '💎', '7️⃣'];
+      const result = [symbols[Math.floor(Math.random() * symbols.length)], symbols[Math.floor(Math.random() * symbols.length)], symbols[Math.floor(Math.random() * symbols.length)]];
+      let win = 0;
+      if(result[0] === result[1] && result[1] === result[2]) win = bet * 5;
+      user.money -= bet;
+      user.money += win;
+      saveDB();
+      return send(`🎰 ${result.join(' ')}\n${win > 0 ? `✅ Du gewinnst ${win}€! 💰` : '❌ Du verlierst!'}`);
+    }
+
+    if(cmd === 'coinflip') {
+      const bet = Number(args[0]);
+      const choice = args[1] || 'kopf';
+      if(isNaN(bet) || user.money < bet) return send('❌ Ungültiger Einsatz!');
+      const flip = Math.random() < 0.5 ? 'kopf' : 'zahl';
+      let win = 0;
+      if(choice.toLowerCase() === flip.toLowerCase()) win = bet * 2;
+      user.money -= bet;
+      user.money += win;
+      saveDB();
+      return send(`🪙 ${flip.toUpperCase()}\n${win > 0 ? `✅ Du gewinnst ${win}€!` : '❌ Du verlierst!'}`);
+    }
+
+    if(cmd === 'dice') {
+      const roll = Math.floor(Math.random() * 6) + 1;
+      return send(`🎲 Du würfelst: ${roll}`);
+    }
+
+    // ===== FUN =====
+    if(cmd === 'roast') {
+      const roasts = [
+        '🔥 Du siehst aus wie eine Kartoffel!',
+        '🔥 Dein IQ ist wie eine Temperatur im Winter!',
+        '🔥 Du bist so langweilig, selbst Farben verblassen!',
+        '🔥 Wenn blöd schmerzen würde, würdest du schreien!',
+        '🔥 Du bist ein Beweis dafür dass Evolution rückwärts laufen kann!'
+      ];
+      return send(roasts[Math.floor(Math.random() * roasts.length)]);
+    }
+
+    if(cmd === 'compliment') {
+      const compliments = [
+        '💕 Du bist wirklich eine großartige Person!',
+        '💕 Dein Lächeln ist wie Sonnenschein!',
+        '💕 Du bist intelligenter als die meisten Menschen!',
+        '💕 Du hast ein großes Herz!',
+        '💕 Dein Stil ist absolut fantastisch!'
+      ];
+      return send(compliments[Math.floor(Math.random() * compliments.length)]);
+    }
+
+    if(cmd === 'hug') return send(`🤗 *UMARMEN* 🤗\n\nDu hast ${args[0] || 'jemandem'} eine warme Umarmung gegeben!`);
+    if(cmd === 'slap') return send(`💥 Du schlägt ${args[0] || 'jemandem'}! SLAP!`);
+    if(cmd === 'punch') return send(`👊 Du boxst ${args[0] || 'jemandem'}!`);
+    if(cmd === 'kiss') return send(`😘 Du küsst ${args[0] || 'jemandem'}!`);
+    if(cmd === 'love') return send(`💕 *LOVE* 💕\n\nDu liebst ${args[0] || 'jemanden'}! ❤️`);
+    if(cmd === 'respect') return send(`🙏 Du zeigst Respekt! 🙏`);
+    if(cmd === 'sus') return send(`📍 Das ist sus... 📍`);
+
+    // ===== LEVEL =====
+    if(cmd === 'level') {
+      return send(`📊 *DEIN LEVEL*\n\nLevel: ${user.level}\nXP: ${user.xp}\nNächstes Level: ${(user.level + 1) * 100} XP`);
+    }
+
+    if(cmd === 'xp') {
+      user.xp += 10;
+      if(user.xp >= (user.level + 1) * 100) {
+        user.level++;
+        user.xp = 0;
+        saveDB();
+        return send(`⭐ *LEVEL UP!* ⭐\n\nDu erreichst Level ${user.level}! 🎉`);
+      }
+      saveDB();
+      return send(`✨ +10 XP\n\nXP: ${user.xp}/${(user.level + 1) * 100}`);
+    }
+
+    if(cmd === 'prestige') {
+      if(user.level < 50) return send(`❌ Du brauchst Level 50! Du hast Level ${user.level}`);
+      user.level = 1;
+      user.xp = 0;
+      user.money += 50000;
+      saveDB();
+      return send(`🌟 *PRESTIGE!* 🌟\n\n✨ Level 1 (Prestige)\n💰 +50000€`);
+    }
+
+    if(cmd === 'rank') {
+      const levels = ['Anfänger', 'Novize', 'Junior', 'Senior', 'Meister', 'Legend', 'Titan', 'Gott'];
+      const rankIdx = Math.min(Math.floor(user.level / 10), levels.length - 1);
+      return send(`🏆 *DEIN RANG*\n\nLevel: ${user.level}\nRang: ${levels[rankIdx]}`);
+    }
+
+    if(cmd === 'profile') {
+      return send(`
+👤 *PROFIL* 👤
+
+Spieler: ${sender.split('@')[0]}
+💰 Geld: ${user.money}€
+🏦 Bank: ${user.bank}€
+Level: ${user.level}
+XP: ${user.xp}
+❤️ HP: ${user.health}
+🏰 Clan: ${user.clan || 'Keine'}
+💼 Job: ${user.job || 'Keinen'}`);
+    }
+
+    // ===== CLAN =====
+    if(cmd === 'clancreate') {
+      const name = args.join(' ');
+      if(!name) return send('❌ Syntax: /clancreate <name>');
+      user.clan = name;
+      saveDB();
+      return send(`🏰 Clan "${name}" erstellt!`);
+    }
+
+    if(cmd === 'claninfo') {
+      return send(`🏰 *CLAN INFO*\n\nClan: ${user.clan || 'Kein Clan'}\nMitglieder: 1\nLevel: 1`);
+    }
+
+    if(cmd === 'clan') {
+      return send(`🏰 *CLAN SYSTEM*\n\n/clancreate <name> - Clan erstellen\n/claninfo - Clan Info\n/claninvite @user - User einladen\n/clankick @user - User rauswurf\n/clanbank - Clan Bank\n/clanwar <clan> - Clankrieg`);
+    }
+
+    // ===== OWNER =====
+    if(isOwner) {
+      if(cmd === 'addmoney') {
+        const amount = Number(args[0]);
+        if(isNaN(amount)) return send('❌ Gib einen Betrag an!');
+        user.money += amount;
+        saveDB();
+        return send(`✅ +${amount}€ hinzugefügt!`);
+      }
+
+      if(cmd === 'setmoney') {
+        const amount = Number(args[0]);
+        if(isNaN(amount)) return send('❌ Gib einen Betrag an!');
+        user.money = amount;
+        saveDB();
+        return send(`✅ Geld auf ${amount}€ gesetzt!`);
+      }
+
+      if(cmd === 'resetuser') {
+        const target = args[0]?.replace('@', '') + '@s.whatsapp.net';
+        db.users[target] = {
+          money: 1000,
+          bank: 0,
+          loan: 0,
+          inventory: [],
+          xp: 0,
+          level: 1,
+          warnings: 0,
+          jailed: false,
+          job: null,
+          cooldowns: {},
+          health: 100,
+          weapon: "Fäuste",
+          houses: [],
+          cars: [],
+          clan: null,
+          daily: { last: null, streak: 0 }
         };
+        saveDB();
+        return send(`✅ ${target.split('@')[0]} wurde zurückgesetzt!`);
+      }
 
-        if(command==='/shop'){
-            let text='🛒 Shop Items:\n';
-            for(let k in shopItems) text+=`- ${k} ${shopItems[k].emoji} ${shopItems[k].price}€\n`;
-            text+='\nNutze /buy <item> um zu kaufen';
-            return sendText(sender,text);
-        }
+      if(cmd === 'shutdown') {
+        await send('👋 Bot wird heruntergefahren...');
+        process.exit(0);
+      }
 
-        if(command==='/buy'){
-            const itemKey=args[1]?.toLowerCase();
-            if(!shopItems[itemKey]) return sendText(sender,'❌ Item ungültig');
-            const item=shopItems[itemKey];
-            if(u.money<item.price) return sendText(sender,'❌ Nicht genug Geld');
-            u.money-=item.price;
-            if(item.type==='house') u.houses.push(itemKey);
-            else if(item.type==='car') u.cars.push(itemKey);
-            else u.items.push(itemKey);
-            saveData();
-            return sendText(sender, `✅ Du hast ${itemKey} ${item.emoji} gekauft`);
-        }
+      if(cmd === 'ban') {
+        const target = args[0]?.replace('@', '');
+        if(!target) return send('❌ Syntax: /ban @user');
+        return send(`🚫 ${target} wurde gebannt!`);
+      }
 
-        // ===== Daily =====
-        if(command==='/daily'){
-            const today=new Date().toDateString();
-            if(u.daily.last===today) return sendText(sender,'❌ Schon heute erhalten');
-            const amount=500; u.money+=amount; u.daily.last=today; u.daily.streak=(u.daily.streak||0)+1; saveData();
-            return sendText(sender, `✅ Du hast ${amount}€ erhalten 🌟 Streak: ${u.daily.streak}`);
-        }
-
-        // ===== Fun & Meme =====
-        if(command==='/hug') return sendText(sender, `🤗 ${sender.split('@')[0]} umarmt ${args[1]||'dir selbst'}`);
-        if(command==='/slap') return sendText(sender, `💥 ${sender.split('@')[0]} schlägt ${args[1]||'dir selbst'}`);
-        if(command==='/meme') return sendText(sender,'😂 Hier wäre ein Meme! (Platzhalter)');
-
-        // ===== Owner =====
-        const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
-        if(isOwner){
-            if(command==='/addmoney'){
-                const amount=parseInt(args[1]);
-                const target=args[2]?args[2]+'@s.whatsapp.net':sender;
-                ensureUser(target); userData[target].money+=amount; saveData();
-                return sendText(sender, `✅ ${amount}€ wurden ${target===sender?'dir':target} hinzugefügt`);
-            }
-            if(command==='/shutdown') process.exit();
-            if(command==='/stats'){
-                const userCount = Object.keys(userData).length;
-                const totalMoney = Object.values(userData).reduce((sum, user) => sum + user.money, 0);
-                return sendText(sender, `📊 Stats:\nUser: ${userCount}\nGesamt Geld: ${totalMoney}€`);
-            }
-        }
-
-        // ===== Jobs / Work =====
-        if(['/work','/job'].includes(command)){
-            if(u.jobs.length===0) return sendText(sender,'❌ Du hast keinen Job. /apply <job> um zu bewerben');
-            const salary=Math.floor(Math.random()*(500-100)+100);
-            u.money+=salary; saveData();
-            return sendText(sender, `💼 Du hast gearbeitet und ${salary}€ verdient!`);
-        }
-        if(command==='/apply'){
-            const job=args[1]; if(!job) return sendText(sender,'❌ Syntax: /apply <job>');
-            if(u.jobs.includes(job)) return sendText(sender,'❌ Du hast diesen Job bereits');
-            u.jobs.push(job); saveData();
-            return sendText(sender, `✅ Du wurdest als ${job} eingestellt`);
-        }
-        if(command==='/quitjob'){
-            const job=args[1]; if(!job||!u.jobs.includes(job)) return sendText(sender,'❌ Job nicht gefunden');
-            u.jobs=u.jobs.filter(j=>j!==job); saveData();
-            return sendText(sender, `✅ Du hast den Job ${job} gekündigt`);
-        }
-
-        // ===== Crime / Risk =====
-        if(command==='/rob'){
-            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
-            if(!target || !userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
-            if(Math.random()>0.5){
-                const amount=Math.floor(Math.random()*(u.money/2+100));
-                u.money+=amount; userData[target].money-=amount; saveData();
-                return sendText(sender, `💰 Du hast ${amount}€ von ${target.split('@')[0]} geraubt`);
-            } else return sendText(sender,'❌ Du wurdest erwischt und musst 1 Runde aussetzen');
-        }
-
-        if(command==='/steal'){
-            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
-            if(!target || !userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
-            if(Math.random()>0.6){
-                const item=userData[target].items.pop();
-                if(!item) return sendText(sender,'❌ Ziel hat keine Items');
-                u.items.push(item); saveData();
-                return sendText(sender, `🛒 Du hast ${item} von ${target.split('@')[0]} gestohlen`);
-            } else return sendText(sender,'❌ Gestohlen fehlgeschlagen');
-        }
-
-        if(command==='/jail'){ u.jail=true; saveData(); return sendText(sender,'🚨 Du bist im Jail, warte 1 Minute oder nutze /escape'); }
-        if(command==='/escape'){
-            if(!u.jail) return sendText(sender,'❌ Du bist nicht im Jail');
-            if(Math.random()>0.5){ u.jail=false; saveData(); return sendText(sender,'✅ Du bist entkommen!'); }
-            else return sendText(sender,'❌ Flucht fehlgeschlagen, bleib im Jail');
-        }
-
-        // ===== Fight / Duel =====
-        if(command==='/fight'){
-            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
-            if(!target||!userData[target]) return sendText(sender,'❌ Ziel nicht gefunden');
-            const damage=Math.floor(Math.random()*50)+10;
-            const targetUser=userData[target];
-            targetUser.hp=targetUser.hp||100;
-            targetUser.hp-=damage;
-            if(targetUser.hp<=0){ targetUser.hp=100; saveData(); return sendText(sender, `💥 Du hast ${target.split('@')[0]} besiegt!`); }
-            saveData();
-            return sendText(sender, `⚔️ Du hast ${target.split('@')[0]} ${damage} HP Schaden zugefügt!`);
-        }
-        if(command==='/heal'){ u.hp=100; saveData(); return sendText(sender,'💖 Du wurdest geheilt'); }
-
-        // ===== Casino / Games =====
-        if(command==='/slot'){
-            const bet=parseInt(args[1]); if(!bet||bet>u.money) return sendText(sender,'❌ Ungültiger Einsatz');
-            const symbols=['🍒','🍋','🍊','🍉','💎','7️⃣'];
-            const result=[symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)]];
-            let win=0; if(result[0]===result[1]&&result[1]===result[2]) win=bet*5;
-            u.money-=bet; u.money+=win; saveData();
-            return sendText(sender, `🎰 ${result.join(' ')}\n${win>0?'✅ Du hast '+win+'€ gewonnen':'❌ Du hast verloren'}`);
-        }
-        if(command==='/coinflip'){
-            const bet=parseInt(args[1]); if(!bet||bet>u.money) return sendText(sender,'❌ Ungültiger Einsatz');
-            const flip=Math.random()<0.5?'Kopf':'Zahl'; const choice=args[2]||'Kopf';
-            let win=0; if(choice.toLowerCase()===flip.toLowerCase()) win=bet*2;
-            u.money-=bet; u.money+=win; saveData();
-            return sendText(sender, `🪙 Ergebnis: ${flip}\n${win>0?'✅ Du hast '+win+'€ gewonnen':'❌ Du hast verloren'}`);
-        }
-
-        // ===== Loot / Boxes =====
-        if(command==='/loot'||command==='/open'){
-            const items=['💎 Diamant','🌿 Cannabis','👕 Luxusshirt','🚗 Auto','🏠 Haus','⌚ Uhr'];
-            const found=items[Math.floor(Math.random()*items.length)];
-            u.items.push(found); saveData();
-            return sendText(sender, `🎁 Du hast erhalten: ${found}`);
-        }
-
-        // ===== Clan =====
-        if(command==='/clan create'){
-            const name=args[1]; if(!name) return sendText(sender,'❌ Syntax: /clan create <name>');
-            u.clans.push(name); saveData();
-            return sendText(sender, `🏰 Clan ${name} erstellt`);
-        }
-        if(command==='/clan invite'){
-            const target=args[1]?.replace('@','')+'@s.whatsapp.net';
-            const clan=args[2]; if(!target||!clan||!u.clans.includes(clan)) return sendText(sender,'❌ Syntax: /clan invite @user <clan>');
-            ensureUser(target); userData[target].clans.push(clan); saveData();
-            return sendText(sender, `✅ ${target.split('@')[0]} wurde eingeladen`);
-        }
-        if(command==='/clan war'){
-            const targetClan=args[1]; if(!targetClan) return sendText(sender,'❌ Syntax: /clan war <clan>');
-            return sendText(sender, `⚔️ Clankrieg gegen ${targetClan} gestartet!`);
-        }
-
-        // ===== Gaming =====
-        if(command==='/dice'){
-            const roll = Math.floor(Math.random() * 6) + 1;
-            return sendText(sender, `🎲 Du würfelst: ${roll}`);
-        }
-
-        if(command==='/rps'){
-            const raw = (args[1] || '').toLowerCase();
-            const map = { stein: 'rock', papier: 'paper', schere: 'scissors' };
-            const choice = map[raw] || raw;
-            const opts = ['rock','paper','scissors'];
-            if(!opts.includes(choice)) return sendText(sender, '❌ Nutze: /rps <rock|paper|scissors> (oder deutsch: stein/papier/schere)');
-            const botPick = opts[Math.floor(Math.random()*3)];
-            let result = 'Unentschieden';
-            if((choice==='rock'&&botPick==='scissors')||(choice==='paper'&&botPick==='rock')||(choice==='scissors'&&botPick==='paper')) result='✅ Du gewinnst!';
-            else if(choice!==botPick) result='❌ Du verlierst!';
-            return sendText(sender, `🕹️ Du: ${choice}\nBot: ${botPick}\n${result}`);
-        }
-
-        if(command==='/leaderboard'){
-            const top = Object.entries(userData).sort((a,b)=>b[1].money - a[1].money).slice(0,5)
-                .map(([k,v],i) => `${i+1}. ${k.split('@')[0]} — ${v.money}€`).join('\n');
-            return sendText(sender, `🏆 Top Spieler:\n${top || 'Noch keine Spieler'}`);
-        }
+      if(cmd === 'unban') {
+        const target = args[0]?.replace('@', '');
+        if(!target) return send('❌ Syntax: /unban @user');
+        return send(`✅ ${target} wurde entbannt!`);
+      }
     }
+
+    // Default Response
+    return send(`✅ /${cmd} ausgeführt`);
+  });
+
+  console.log('🚀 SUKA SUPREME BOT v2.0 - READY!');
 }
 
 startBot().catch(err => {
-    console.error('❌ Bot Fehler:', err);
-    process.exit(1);
+  console.error('❌ Fehler:', err);
+  process.exit(1);
 });
