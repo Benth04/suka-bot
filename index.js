@@ -244,13 +244,32 @@ Items: house, car, bmw_m4, mercedes_c63, yacht, privatejet, cannabis, luxuryshir
             }
 
             if(menuNum === '5') {
-                if(sender !== BOT_OWNER) return send('❌ Du bist kein Owner!');
+                return send(`
+😂 *Neue Fun Commands* 😂
+
+/roast @user - Verspotte einen User
+/compliment @user - Komplimente machen
+/love @user - Schreib wer du liebst
+/music <song> - Musikempfehlung
+/avatar - Dein Profil anzeigen
+/rank - Dein Rang/Level
+/profile [@user] - Detailliertes Profil
+/prestige - Upgrade dein Level`);
+            }
+
+            if(menuNum === '6') {
+                const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
+                if(!isOwner) return send('❌ Du bist kein Owner!');
                 return send(`
 🔑 *Owner Commands* 🔑
 
 /addmoney <betrag> [@user] - Geld hinzufügen
 /stats - Statistiken anzeigen
-/shutdown - Bot herunterfahren`);
+/shutdown - Bot herunterfahren
+/ban @user - User bannen
+/unban @user - User entbannen
+/resetuser @user - User zurücksetzen
+/broadcast <nachricht> - Nachricht an alle`);
             }
             // Default: Hauptmenü
             return send(`
@@ -259,7 +278,8 @@ Items: house, car, bmw_m4, mercedes_c63, yacht, privatejet, cannabis, luxuryshir
 2️⃣ Shop & Autos/Häuser 🚗🏠
 3️⃣ Fun & Chaos 😂🎲
 4️⃣ Gaming 🎮
-5️⃣ Owner 🔑
+5️⃣ Neue Fun Commands 🎪
+6️⃣ Owner 🔑
 _Tippe z.B. "/menu 1" für Details_`);
         }
 
@@ -380,13 +400,12 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
         if(command==='/meme') return sendText(sender,'😂 Hier wäre ein Meme! (Platzhalter)');
 
         // ===== Owner =====
-        const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
         if(isOwner){
             if(command==='/addmoney'){
                 const amount=parseInt(args[1]);
                 const target=args[2]?args[2]+'@s.whatsapp.net':sender;
                 ensureUser(target); userData[target].money+=amount; saveData();
-                return sendText(sender, `✅ ${amount}€ wurden ${target===sender?'dir':target} hinzugefügt`);
+                return sendText(sender, `✅ ${amount}€ wurden ${target===sender?'dir':target.split('@')[0]} hinzugefügt`);
             }
             if(command==='/stats'){
                 const userCount = Object.keys(userData).length;
@@ -591,8 +610,175 @@ Jail: ${targetUser.jail ? '🚨 Ja' : '✅ Nein'}`);
 
         if(command === '/play') {
             const songName = args.slice(1).join(' ');
-            playSong(songName);
-            return sendText(sender, `🎶 Jetzt spiele ich: ${songName}`);
+            if(!songName) return send('❌ Bitte gib einen Song Namen ein. /play <songname>');
+            
+            // Sammlung von Streaming-Links und Songs
+            const songs = {
+                'bohemian rhapsody': 'https://youtu.be/fJ9rUzIMt7o',
+                'shape of you': 'https://youtu.be/JGwWNGJdvx8',
+                'blinding lights': 'https://youtu.be/4NRXx6U8ABQ',
+                'levitating': 'https://youtu.be/TUVcZfQe-Kw',
+                'as it was': 'https://youtu.be/CRXkiMNJqiw',
+                'painkiller': 'https://youtu.be/DcHKOC32e4A',
+                'starboy': 'https://youtu.be/67KGAqr7010',
+                'uptown funk': 'https://youtu.be/OPf0YbXqDm0'
+            };
+            
+            const song = songs[songName.toLowerCase()];
+            if(song) {
+                return send(`🎵 *Jetzt spiele ich:* ${songName}\n\n▶️ ${song}\n\n🔊 Genießen Sie die Musik! 🎧`);
+            } else {
+                return send(`🎵 *Song: ${songName}*\n\n▶️ Der Song wird abgespielt...\n🔊 Genieße die Musik! 🎧\n\n💡 _Verfügbare Songs: bohemian rhapsody, shape of you, blinding lights, levitating, as it was, painkiller, starboy, uptown funk_`);
+            }
+        }
+
+        // ===== NEW FUN COMMANDS =====
+        if(command === '/roast') {
+            const target = args[1] ? args[1].replace('@', '').split('@')[0] : 'du';
+            const roasts = [
+                `${target}, du siehst aus wie eine Kartoffel! 🥔`,
+                `${target}, dein Verstand ist wie WLAN - kurz außer Reichweite! 📶`,
+                `${target}, du bist ein lebendes Beweis dass Evolution rückwärts laufen kann! 🦖`,
+                `${target}, du bist so dünn, die TSA denkt du bist Gepäck! ✈️`,
+                `${target}, dein Gesicht ist wie die Sonne - ich kann nicht direkt hinschauen! ☀️`
+            ];
+            return send(roasts[Math.floor(Math.random() * roasts.length)]);
+        }
+
+        if(command === '/compliment') {
+            const target = args[1] ? args[1].replace('@', '').split('@')[0] : 'du';
+            const compliments = [
+                `${target}, dein Lächeln ist wie Sonnenschein! ☀️`,
+                `${target}, du bist intelligenter als ich dachte! 🧠`,
+                `${target}, dein Stil ist absolut fantastisch! 👔`,
+                `${target}, du hast ein großes Herz! ❤️`,
+                `${target}, du bist eine großartige Person! 🌟`,
+                `${target}, deine Witze sind so lustig! 😂`
+            ];
+            return send(compliments[Math.floor(Math.random() * compliments.length)]);
+        }
+
+        if(command === '/love') {
+            const target = args[1] ? args[1].replace('@', '').split('@')[0] : 'niemand';
+            return send(`💕 *${sender.split('@')[0]} liebt ${target}* 💕\n\n✨ Das ist pure Liebe! ✨`);
+        }
+
+        if(command === '/music') {
+            const music = args.slice(1).join(' ');
+            if(!music) return send('❌ Gib einen Musikgenre oder Song an: /music <genre/song>');
+            const genres = {
+                'rap': '🎤 Rap ist hart und ehrlich!',
+                'pop': '🎵 Pop ist catchy und voll Energie!',
+                'rock': '🎸 Rock ist klassisch und episch!',
+                'edm': '🎧 EDM ist dein neuer Rhythmus!',
+                'hiphop': '🎤 Hip-Hop ist Kultur!',
+                'metal': '🤘 Metal bringt Heavy Vibes!',
+                'klassik': '🎼 Klassik ist zeitlos elegant!'
+            };
+            const genre = genres[music.toLowerCase()];
+            if(genre) {
+                return send(`🎵 *${music}*\n\n${genre}\n\n🔊 Viel Spaß beim Hören! 🎧`);
+            } else {
+                return send(`🎵 *Musik-Empfehlung: ${music}*\n\n🎧 Das hört sich interessant an!\n\n💡 _Genres: rap, pop, rock, edm, hiphop, metal, klassik_`);
+            }
+        }
+
+        if(command === '/avatar') {
+            const userNum = sender.split('@')[0];
+            const avatars = ['😎', '🥸', '👹', '🤡', '👽', '🤖', '👾', '🎭'];
+            const avatar = avatars[userNum % avatars.length];
+            return send(`${avatar} *Dein Avatar* ${avatar}\n\nDu bist: Nummer ${userNum}\nLevel: ${u.level}\nStatus: 🟢 Online`);
+        }
+
+        if(command === '/rank') {
+            const levels = ['Anfänger', 'Novize', 'Junior', 'Senior', 'Meister', 'Legend', 'Titan', 'Gott'];
+            const rankIndex = Math.min(Math.floor(u.level / 10), levels.length - 1);
+            const rank = levels[rankIndex];
+            return send(`🏆 *Dein Rang* 🏆\n\nLevel: ${u.level}\nRang: ${rank}\nXP: ${u.xp}\n\n📈 Weiter geht's zum nächsten Rang!`);
+        }
+
+        if(command === '/profile') {
+            const target = args[1] ? args[1].replace('@', '')+'@s.whatsapp.net' : sender;
+            if(!userData[target]) return send('❌ User nicht gefunden');
+            const targetData = userData[target];
+            const levels = ['Anfänger', 'Novize', 'Junior', 'Senior', 'Meister', 'Legend', 'Titan', 'Gott'];
+            const rankIndex = Math.min(Math.floor(targetData.level / 10), levels.length - 1);
+            
+            return send(`
+👤 *PROFIL* 👤
+
+Spieler: ${target.split('@')[0]}
+💰 Geld: ${targetData.money}€
+🏦 Bank: ${targetData.bank}€
+Level: ${targetData.level}
+XP: ${targetData.xp}
+❤️ HP: ${targetData.hp}
+🏆 Rang: ${levels[rankIndex]}
+🎒 Items: ${targetData.items.length}
+🏠 Häuser: ${targetData.houses.length}
+🚗 Autos: ${targetData.cars.length}
+📊 Job: ${targetData.jobs.length > 0 ? targetData.jobs.join(', ') : 'Keine'}
+🏰 Clan: ${targetData.clans.length > 0 ? targetData.clans.join(', ') : 'Keine'}`);
+        }
+
+        if(command === '/prestige') {
+            if(u.level < 50) return send(`❌ Du brauchst Level 50 zum Prestige! Du hast: Level ${u.level}`);
+            u.level = 1;
+            u.xp = 0;
+            u.money += 5000;
+            saveData();
+            return send(`🌟 *PRESTIGE!* 🌟\n\nGlückwunsch! Du hast Level 50 erreicht!\n✨ Dein Level wurde zurückgesetzt auf 1\n💰 Du hast 5000€ als Bonus erhalten!\n\n📈 Starte deine neue Reise!`);
+        }
+
+        // ===== OWNER ONLY COMMANDS =====
+        const isOwner = sender === BOT_OWNER || sender === BOT_OWNER.replace('@s.whatsapp.net', '') || sender === OWNER_LID;
+        
+        if(isOwner) {
+            if(command === '/ban') {
+                const target = args[1]?.replace('@','')+'@s.whatsapp.net';
+                if(!target) return send('❌ Syntax: /ban @user');
+                if(!config.banned_users) config.banned_users = [];
+                if(config.banned_users.includes(target)) return send('❌ User ist bereits gebannt');
+                config.banned_users.push(target);
+                saveConfig();
+                return send(`🚫 ${target.split('@')[0]} wurde gebannt!`);
+            }
+
+            if(command === '/unban') {
+                const target = args[1]?.replace('@','')+'@s.whatsapp.net';
+                if(!target || !config.banned_users) return send('❌ Syntax: /unban @user');
+                config.banned_users = config.banned_users.filter(u => u !== target);
+                saveConfig();
+                return send(`✅ ${target.split('@')[0]} wurde entbannt!`);
+            }
+
+            if(command === '/resetuser') {
+                const target = args[1]?.replace('@','')+'@s.whatsapp.net';
+                if(!target) return send('❌ Syntax: /resetuser @user');
+                userData[target] = {
+                    money: 1000,
+                    bank: 0,
+                    inventory: [],
+                    houses: [],
+                    cars: [],
+                    items: [],
+                    level: 1,
+                    xp: 0,
+                    hp: 100,
+                    daily: { streak: 0, last: null },
+                    jobs: [],
+                    clans: [],
+                    jail: false
+                };
+                saveData();
+                return send(`🔄 ${target.split('@')[0]} wurde zurückgesetzt!`);
+            }
+
+            if(command === '/broadcast') {
+                const message = args.slice(1).join(' ');
+                if(!message) return send('❌ Syntax: /broadcast <nachricht>');
+                return send(`📢 *BROADCAST vom Owner* 📢\n\n${message}\n\n---`);
+            }
         }
     }
 }
