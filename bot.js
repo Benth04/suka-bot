@@ -5,7 +5,7 @@ console.log("🤖 BOT MIT ~150 COMMANDS STARTET JETZT");
 // Owner: +49 1515 0928935
 // ===========================
 
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@adiwajshing/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('baileys');
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 
@@ -16,10 +16,19 @@ const DB_FILE = './database.json';
 const START_TIME = Date.now();
 
 let db = { users: {} };
-if (fs.existsSync(DB_FILE)) db = JSON.parse(fs.readFileSync(DB_FILE));
+if (fs.existsSync(DB_FILE)) {
+  try {
+    const loaded = JSON.parse(fs.readFileSync(DB_FILE));
+    db = (loaded && loaded.users) ? loaded : { users: {} };
+  } catch(e) {
+    console.log('⚠️ Datenbankdatei beschädigt, erstelle neue...');
+    db = { users: {} };
+  }
+}
 const saveDB = () => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 
 function getUser(id) {
+  if (!db.users) db.users = {};
   if (!db.users[id]) {
     db.users[id] = {
       money: 1000,
