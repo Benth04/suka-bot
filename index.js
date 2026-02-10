@@ -84,6 +84,30 @@ const ALL = [
   ...FIGHT,...LOOT,...CLAN,...GAMES,...FUN,...MEME,...RATINGS,...SYSTEM,...MUSIC
 ];
 
+// Load external command files from ./commands and merge their names
+const CMD_MAP = new Map();
+try {
+  const cmdFiles = fs.existsSync('./commands') ? fs.readdirSync('./commands').filter(f => f.endsWith('.js')) : [];
+  for (const file of cmdFiles) {
+    try {
+      const cmds = require(`./commands/${file}`);
+      if (Array.isArray(cmds)) {
+        cmds.forEach(c => {
+          if (c && c.name) {
+            CMD_MAP.set(c.name, c);
+            if (!ALL.includes(c.name)) ALL.push(c.name);
+          }
+        });
+      }
+    } catch (e) {
+      console.log('⚠️ Fehler beim Laden von', file, e.message);
+    }
+  }
+  if (CMD_MAP.size > 0) console.log(`✅ Geladene externe Commands: ${CMD_MAP.size}`);
+} catch (e) {
+  console.log('ℹ️ Keine externen Commands geladen');
+}
+
 // ===== BOT =====
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -215,6 +239,10 @@ Tippe: /menu 0 für andere Kategorien`);
 /drop <item> - Item fallen lassen
 /market - Marktplatz
 /price <item> - Preis prüfen
+ /lootbox - Lootbox öffnen
+ /crate - Kiste öffnen
+ /salvage - Item zerlegen
+ /upgradeitem - Item verbessern
 
 Tippe: /menu 0 für andere Kategorien`);
       }
@@ -282,8 +310,24 @@ Tippe: /menu 0 für andere Kategorien`);
 /achievements - Erfolge anzeigen
 /profile - Dein Profil
 /stats - Statistiken
+ /skillpoints - Freie Skillpunkte anzeigen
+ /passives - Passivfähigkeiten anzeigen
+ /resetskills - Alle Skills zurücksetzen
 
 Tippe: /menu 0 für andere Kategorien`);
+      }
+
+      if(menuNum === '10') {
+        return send(`
+ 🧭 *ADVENTURE & RPG* (10/10)
+
+ /adventure - Starte ein Abenteuer
+ /explore - Erkunde die Welt
+ /questlog - Quest Log anzeigen
+ /dungeon - Betritt ein Dungeon
+ /bossfight - Bosskampf starten
+
+ Tippe: /menu 0 für andere Kategorien`);
       }
 
       if(menuNum === '7') {
@@ -353,6 +397,7 @@ Tippe: /menu 0 für andere Kategorien`);
 7️⃣ /menu 7 - 👨‍👨‍👧‍👦 Clan System (9 Commands)
 8️⃣ /menu 8 - 💼 Work & Jobs (8 Commands)
 9️⃣ /menu 9 - 🔑 Owner (nur Owner!)
+1️⃣0️⃣ /menu 10 - 🧭 Adventure & RPG
 
 👉 Tippe z.B. "/menu 1" für Details!`);
     }
@@ -738,6 +783,18 @@ XP: ${user.xp}
     }
 
     // Default Response
+    // Handle external commands loaded from ./commands
+    if (CMD_MAP.has(cmd)) {
+      try {
+        const command = CMD_MAP.get(cmd);
+        await command.execute({ sender, args, reply: send, from, sock, db, getUser, user });
+        return;
+      } catch (e) {
+        console.error('❌ Fehler beim Ausführen externen Commands', e);
+        return send('❌ Fehler beim Ausführen des Commands');
+      }
+    }
+
     return send(`✅ /${cmd} ausgeführt`);
   });
 
