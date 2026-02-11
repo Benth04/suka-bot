@@ -81,7 +81,7 @@ function startWebsite() {
     // API - User Data
     app.get('/api/users', (req, res) => {
         try {
-            const userData = JSON.parse(fs.readFileSync('./user_data.json', 'utf8'));
+            const userData = global.userData || {};
             res.json(userData);
         } catch (error) {
             res.json({});
@@ -91,7 +91,7 @@ function startWebsite() {
     // API - User Details
     app.get('/api/user/:id', (req, res) => {
         try {
-            const userData = JSON.parse(fs.readFileSync('./user_data.json', 'utf8'));
+            const userData = global.userData || {};
             const user = userData[req.params.id];
             if (user) {
                 res.json(user);

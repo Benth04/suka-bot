@@ -27,7 +27,20 @@ if (fs.existsSync(DB_FILE)) {
     db = { users: {} };
   }
 }
-const saveDB = () => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+const saveDB = () => {
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  global.userData = db.users;
+};
+
+// Initialize global state for website
+global.userData = db.users;
+global.botState = {
+  connected: false,
+  uptime: '0h 0m',
+  messagesProcessed: 0,
+  startTime: new Date(),
+  commandsExecuted: 0
+};
 
 function getUser(id) {
   if (!db.users) db.users = {};
@@ -122,12 +135,26 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds);
 
+  // Update bot uptime every second
+  setInterval(() => {
+    if (global.botState && global.botState.connected) {
+      const uptime = Math.floor((Date.now() - global.botState.startTime.getTime()) / 1000);
+      const hours = Math.floor(uptime / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      global.botState.uptime = `${hours}h ${minutes}m`;
+    }
+  }, 1000);
+
   sock.ev.on('connection.update', (update) => {
     if(update.qr) {
       console.log('📌 QR-Code zum Scannen:');
       qrcode.generate(update.qr, { small: true });
     }
-    if(update.connection==='open') console.log('✅ BOT ONLINE - ~150 COMMANDS GELADEN');
+    if(update.connection==='open') {
+      console.log('✅ BOT ONLINE - ~150 COMMANDS GELADEN');
+      global.botState.connected = true;
+      global.botState.startTime = new Date();
+    }
     if(update.connection==='connecting') console.log('🔄 Verbinde...');
     if(update.lastDisconnect && update.lastDisconnect.error) {
       console.log('⚠️ Verbindung getrennt, reconnect in 5s...');
@@ -140,6 +167,9 @@ async function startBot() {
   sock.ev.on('messages.upsert', async ({ messages }) => {
     const msg = messages[0];
     if(!msg.message || msg.key.fromMe) return;
+
+    // Update global message counter
+    global.botState.messagesProcessed++;
 
     let from = msg.key.remoteJid;
     let sender = msg.key.participant || from;
@@ -810,10 +840,5 @@ if (!websiteStarted) {
 
 startBot().catch(err => {
   console.error('❌ Bot Fehler:', err);
-  process.exit(1);
-});
-
-startBot().catch(err => {
-  console.error('❌ Fehler:', err);
   process.exit(1);
 });
