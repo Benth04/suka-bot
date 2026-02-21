@@ -157,10 +157,28 @@ async function startBot() {
     }
     if(update.connection==='connecting') console.log('🔄 Verbinde...');
     if(update.lastDisconnect && update.lastDisconnect.error) {
-      console.log('⚠️ Verbindung getrennt, reconnect in 5s...');
       const reason = update.lastDisconnect.error.output?.statusCode;
-      if(reason === DisconnectReason.loggedOut) process.exit(0);
-      setTimeout(startBot, 5000);
+      const statusCode = update.lastDisconnect.error.output?.statusCode;
+      const reconnectDelay = reason === DisconnectReason.loggedOut ? 10000 : 5000;
+      
+      if(reason === DisconnectReason.loggedOut) {
+        console.log('⚠️ Session ausgeloggt - Versuche Neuverbindung mit frischen Credentials (10s)...');
+        // Lösche alte Auth-Daten um frische Credentials zu erzeugen
+        try {
+          const authPath = './auth';
+          if(fs.existsSync(authPath)) {
+            fs.rmSync(authPath, { recursive: true, force: true });
+            console.log('🔄 Auth-Daten gelöscht, starte neu...');
+          }
+        } catch(e) {
+          console.log('⚠️ Fehler beim Löschen Auth-Daten:', e.message);
+        }
+      } else {
+        console.log(`⚠️ Verbindung getrennt (Fehlercode: ${statusCode}), reconnect in ${reconnectDelay/1000}s...`);
+      }
+      
+      global.botState.connected = false;
+      setTimeout(startBot, reconnectDelay);
     }
   });
 
