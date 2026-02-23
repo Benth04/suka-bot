@@ -27,7 +27,10 @@ if (fs.existsSync(DB_FILE)) {
     db = { users: {} };
   }
 }
-const saveDB = () => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+const saveDB = () => {
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  global.userData = db.users;
+};
 
 function getUser(id) {
   if (!db.users) db.users = {};
@@ -52,6 +55,26 @@ function getUser(id) {
     };
   }
   return db.users[id];
+}
+
+// Simple ranks stub (can be replaced with a real implementation)
+const ranks = { getRank: (id) => 'member' };
+
+// Per-chat prefix helpers
+function getPrefixForChat(chatId) {
+  if (!db.chats) db.chats = {};
+  if (!db.chats[chatId]) return PREFIX;
+  return db.chats[chatId].prefix || PREFIX;
+}
+
+function setPrefixForChat(chatId, newPrefix) {
+  if (!db.chats) db.chats = {};
+  if (!newPrefix || newPrefix === 'default') {
+    if (db.chats[chatId]) delete db.chats[chatId].prefix;
+  } else {
+    db.chats[chatId].prefix = newPrefix;
+  }
+  saveDB();
 }
 
 // ===== COMMAND LISTS =====
@@ -161,10 +184,13 @@ async function startBot() {
     let from = msg.key.remoteJid;
     let sender = msg.key.participant || from;
     const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
-    
-    if(!text.startsWith(PREFIX)) return;
 
-    const args = text.slice(1).trim().split(/ +/);
+    const chatId = from;
+    const isGroupChat = from && from.endsWith && from.endsWith('@g.us');
+    const chatPrefix = getPrefixForChat(chatId) || PREFIX;
+    if(!text.startsWith(chatPrefix)) return;
+
+    const args = text.slice(chatPrefix.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const user = getUser(sender);
     
@@ -183,6 +209,33 @@ async function startBot() {
     // Debug: Owner Status anzeigen bei Owner Commands
     if(OWNER_CMDS.includes(cmd) && !isOwner) {
       return send(`❌ Du bist kein Owner! Du brauchst Owner-Rechte für diesen Command.\n\n👤 Deine ID: ${sender}`);
+    }
+
+    // setprefix command (Owner or group admins)
+    if (cmd === 'setprefix') {
+      const newPrefix = args[0];
+      let isSenderAdmin = false;
+      if (isGroupChat) {
+        try {
+          const metadata = await sock.groupMetadata(chatId);
+          const participant = metadata.participants.find(p => p.id === sender);
+          isSenderAdmin = !!(participant && (participant.admin || participant.isAdmin || participant.admin === 'admin'));
+        } catch {}
+      }
+
+      if (!(isOwner || isSenderAdmin)) {
+        return send('❌ Du brauchst Owner- oder Gruppen-Admin-Rechte um das Prefix zu ändern.');
+      }
+
+      if (!newPrefix) {
+        await sock.sendMessage(from, { text: `❗ Usage: ${getPrefixForChat(chatId)}setprefix <prefix|default>` }, { quoted: msg });
+        return;
+      }
+
+      setPrefixForChat(chatId, newPrefix);
+      const cur = getPrefixForChat(chatId);
+      await sock.sendMessage(chatId, { text: `✅ Prefix gesetzt auf: ${cur}\nBeispiel: ${cur}ping` }, { quoted: msg });
+      return;
     }
 
     // Unbekannte Commands
