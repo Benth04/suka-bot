@@ -108,7 +108,7 @@ const GAMES = ["coinflip","dice","slot","casino","bet","jackpot","roulette"];
 const FUN = ["roast","respect","sus","mid","hug","slap","punch","kiss","compliment","love"];
 const MEME = ["meme","vibecheck","aura","energy","mood"];
 const RATINGS = ["iq","coolrate","gayrate","simp","sigma","toxicrate","sadrate"];
-const SYSTEM = ["settings","profile","profileedit","privacy","notifications","language"];
+const SYSTEM = ["settings","profile","profileedit","privacy","notifications","language","setprefix"];
 const MUSIC = ["play","music","audio","song"];
 
 const ALL = [
