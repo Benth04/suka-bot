@@ -54,8 +54,10 @@ function getPrefixForChat(chatId) {
 
 function setPrefixForChat(chatId, newPrefix) {
   if (!db.chats) db.chats = {};
+  if (!db.chats[chatId]) db.chats[chatId] = {};
   if (!newPrefix || newPrefix === 'default') {
     if (db.chats[chatId]) delete db.chats[chatId].prefix;
+    if (db.chats[chatId] && Object.keys(db.chats[chatId]).length === 0) delete db.chats[chatId];
   } else {
     db.chats[chatId].prefix = newPrefix;
   }
